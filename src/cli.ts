@@ -17,7 +17,7 @@ function printHelp(): void {
     "  install [target]    Configure lumina-mdle-dev as an MCP server in your AI tools",
     "",
     "Targets (CLI-based — requires tool binary in PATH):",
-    "  claude, gemini, codex, opencode, windsurf",
+    "  claude, antigravity, codex, opencode, windsurf",
     "",
     "Targets (file-based — requires tool config directory to exist):",
     "  cursor, zed, cline",

@@ -1,7 +1,7 @@
 # Lumina Moodle Developer 🎓🤖
 
 <p align="center">
-    <img src="docs/img/logo2.png" alt="Lumina Moodle Developer" width="200px">
+    <img src="docs/img/logo.png" alt="Lumina Moodle Developer" width="200px">
 </p>
 
 > **Turn your AI assistant into a Moodle expert.**
@@ -174,7 +174,7 @@ For full details of parameters and examples, see the [Tools Reference](./docs/en
 | Client             | Support     | Configuration guide                                          | Tested |
 | ------------------ | ----------- | ------------------------------------------------------------ | ------ |
 | Claude Code        | ✅ Official | [View guide](./docs/en/guides/clients/claude-code.md)        | Yes    |
-| Gemini Code Assist | ✅ Official | [View guide](./docs/en/guides/clients/gemini-code-assist.md) | Yes    |
+| Antigravity CLI    | ✅ Official | [View guide](./docs/en/guides/clients/antigravity.md)        | Yes    |
 | OpenAI Codex       | ✅ Official | [View guide](./docs/en/guides/clients/codex.md)              | No     |
 | OpenCode           | ✅ Official | [View guide](./docs/en/guides/clients/opencode.md)           | Yes    |
 
@@ -213,9 +213,9 @@ claude mcp add lumina-mdle-dev \
   -- npx -y lumina-mdle-dev
 ```
 
-### Gemini Code Assist (VS Code)
+### Antigravity CLI
 
-Edit the file `~/.gemini/settings.json`:
+Edit or create `~/.gemini/antigravity/mcp_config.json` and add the server under the `mcpServers` block:
 
 ```json
 {

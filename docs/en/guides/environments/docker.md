@@ -43,7 +43,7 @@ claude mcp add lumina-mdle-dev \
 
 ---
 
-### AI Client Configuration (Gemini Code Assist — `~/.gemini/settings.json`)
+### AI Client Configuration (Antigravity CLI — `~/.gemini/antigravity/mcp_config.json`)
 
 ```json
 {
@@ -143,7 +143,7 @@ After starting the container, configure your AI client to connect via URL.
 
 ---
 
-### Gemini Code Assist (`~/.gemini/settings.json`)
+### Antigravity CLI (`~/.gemini/antigravity/mcp_config.json`)
 
 ```json
 {
@@ -226,7 +226,7 @@ docker compose restart lumina-mdle-dev
 # ➡️ Next Steps
 
 - [Claude Code](../clients/claude-code.md) — detailed configuration
-- [Gemini Code Assist](../clients/gemini-code-assist.md) — detailed configuration
+- [Antigravity CLI](../clients/antigravity.md) — detailed configuration
 - [OpenAI Codex](../clients/codex.md) — detailed configuration
 - [OpenCode](../clients/opencode.md) — detailed configuration
 - [Common Issues](../../troubleshooting/common-issues.md) — permission and PATH errors

@@ -202,7 +202,7 @@ claude mcp add lumina-mdle-dev \
 }
 ```
 
-### Gemini Code Assist (`~/.gemini/settings.json`)
+### Antigravity CLI (`~/.gemini/antigravity/mcp_config.json`)
 
 ```json
 {

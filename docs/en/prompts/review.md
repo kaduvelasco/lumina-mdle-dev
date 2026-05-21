@@ -102,7 +102,7 @@ Update CLAUDE.md recording the progress of the local_myplugin review:
 files already reviewed and issues found.
 ```
 
-**Gemini CLI** — to resume the exact session:
+**Antigravity CLI** — to resume the exact session:
 
 ```bash
 /chat save review-local-myplugin

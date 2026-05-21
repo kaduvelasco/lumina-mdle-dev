@@ -39,7 +39,7 @@ Entenda o que é o MCP, por que este servidor existe e como ele funciona interna
 Configure o servidor no seu assistente de IA preferido.
 
 - [Claude Code](./guides/clients/claude-code.md)
-- [Gemini Code Assist](./guides/clients/gemini-code-assist.md)
+- [Antigravity CLI](./guides/clients/antigravity.md)
 - [OpenAI Codex](./guides/clients/codex.md)
 - [OpenCode](./guides/clients/opencode.md)
 

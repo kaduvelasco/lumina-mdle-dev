@@ -134,12 +134,12 @@ const TARGETS: Target[] = [
     },
   },
   {
-    id:    "gemini",
-    label: "Gemini CLI",
+    id:    "antigravity",
+    label: "Antigravity CLI",
     kind:  "cli",
-    detect() { return inPath("gemini"); },
+    detect() { return inPath("agy"); },
     install(moodlePath) {
-      return installMcpServers(join(HOME, ".gemini", "settings.json"), moodlePath);
+      return installMcpServers(join(HOME, ".gemini", "antigravity", "mcp_config.json"), moodlePath);
     },
   },
   {

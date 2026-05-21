@@ -65,7 +65,7 @@ which node
 }
 ```
 
-**Gemini Code Assist (`~/.gemini/settings.json`):**
+**Antigravity CLI (`~/.gemini/antigravity/mcp_config.json`):**
 ```json
 {
   "mcpServers": {
@@ -108,27 +108,17 @@ env      = { MOODLE_PATH = "/home/usuario/workspace/www/html/moodle" }
 
 ---
 
-### Gemini travado em "Connecting..."
+### Servidor travado em "Connecting..."
 
 **Sintoma:** O servidor aparece mas nunca sai do estado "Connecting...". Nenhuma tool é listada.
 
-**No VS Code (Gemini Code Assist):**
+**No CLI (Antigravity CLI):**
 
-**Causa:** O Gemini Code Assist só carrega servidores MCP no **Agent Mode**. No chat padrão, o servidor não é inicializado.
-
-**Solução:**
-1. Confirme que o toggle **Agent** está ativo no topo do painel do Gemini
-2. Recarregue a janela: `Ctrl+Shift+P` → **Developer: Reload Window**
-3. Execute `/mcp` novamente no chat do Agent Mode
-
-**No CLI (gemini):**
-
-Se o servidor foi adicionado com `gemini mcp add` mas não aparece, reinicie a sessão:
+Se o servidor foi configurado mas não aparece, reinicie a sessão:
 
 ```bash
-# Encerrar a sessão atual e iniciar uma nova
 Ctrl+C
-gemini
+agy
 ```
 
 Dentro da sessão, verifique com `/mcp`.
@@ -321,13 +311,13 @@ Nomear a tool explicitamente garante que a IA a utilize em vez de responder com 
 Se o seu problema não está listado aqui:
 
 1. Peça ao assistente: _"Execute o doctor do lumina-mdle-dev"_ e copie a saída completa
-2. Anote qual cliente de IA está usando (Claude Code, Gemini Code Assist, OpenAI Codex, OpenCode) e a versão
+2. Anote qual cliente de IA está usando (Claude Code, Antigravity CLI, OpenAI Codex, OpenCode) e a versão
 3. Abra uma **Issue** no GitHub: [github.com/kaduvelasco/lumina-mdle-dev/issues](https://github.com/kaduvelasco/lumina-mdle-dev/issues)
 4. Descreva os passos para reproduzir o erro e inclua a saída do `doctor`
 
 ---
 
-> **Dica:** Reiniciar o IDE ou o processo do cliente de IA resolve boa parte dos problemas de travamento do servidor MCP — especialmente após editar arquivos de configuração como `~/.claude.json`, `~/.gemini/settings.json`, `~/.codex/config.toml` ou `opencode.json`.
+> **Dica:** Reiniciar o IDE ou o processo do cliente de IA resolve boa parte dos problemas de travamento do servidor MCP — especialmente após editar arquivos de configuração como `~/.claude.json`, `~/.gemini/antigravity/mcp_config.json`, `~/.codex/config.toml` ou `opencode.json`.
 
 ---
 

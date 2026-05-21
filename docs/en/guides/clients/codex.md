@@ -202,7 +202,7 @@ Codex only supports **stdio** for local servers. `lumina-mdle-dev` uses stdio by
 ## ➡️ Next Steps
 
 - [Claude Code](./claude-code.md) — Anthropic's CLI with JSON configuration
-- [Gemini Code Assist](./gemini-code-assist.md) — VS Code extension with Agent Mode
+- [Antigravity CLI](./antigravity.md) — Google's terminal agent
 - [OpenCode](./opencode.md) — open-source agent with TUI interface
 - [Workflow Examples](../workflows/examples.md) — ready-to-use prompts for real scenarios
 - [Tools Reference](../../reference/tools.md) — complete parameters for all tools

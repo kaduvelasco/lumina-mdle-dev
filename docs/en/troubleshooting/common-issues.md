@@ -65,7 +65,7 @@ which node
 }
 ```
 
-**Gemini Code Assist (`~/.gemini/settings.json`):**
+**Antigravity CLI (`~/.gemini/antigravity/mcp_config.json`):**
 ```json
 {
   "mcpServers": {
@@ -108,26 +108,17 @@ env      = { MOODLE_PATH = "/home/user/workspace/www/html/moodle" }
 
 ---
 
-### Gemini stuck at "Connecting..."
+### Server stuck at "Connecting..."
 
 **Symptom:** The server appears but never leaves the "Connecting..." state. No tools are listed.
 
-**In VS Code (Gemini Code Assist):**
+**In CLI (Antigravity CLI):**
 
-**Cause:** Gemini Code Assist only loads MCP servers in **Agent Mode**. In standard chat, the server is not initialized.
-
-**Solution:**
-1. Confirm the **Agent** toggle is active at the top of the Gemini panel
-2. Reload the window: `Ctrl+Shift+P` → **Developer: Reload Window**
-3. Run `/mcp` again in the Agent Mode chat
-
-**In CLI (gemini):**
-
-If the server was added with `gemini mcp add` but does not appear, restart the session:
+If the server was configured but does not appear, restart the session:
 
 ```bash
 Ctrl+C
-gemini
+agy
 ```
 
 Then check with `/mcp` inside the session.
@@ -319,13 +310,13 @@ Naming the tool explicitly ensures the AI uses it instead of responding with gen
 If your problem is not listed here:
 
 1. Ask your assistant: _"Run the lumina-mdle-dev doctor"_ and copy the full output
-2. Note which AI client you are using (Claude Code, Gemini Code Assist, OpenAI Codex, OpenCode) and the version
+2. Note which AI client you are using (Claude Code, Antigravity CLI, OpenAI Codex, OpenCode) and the version
 3. Open an **Issue** on GitHub: [github.com/kaduvelasco/lumina-mdle-dev/issues](https://github.com/kaduvelasco/lumina-mdle-dev/issues)
 4. Describe the steps to reproduce the error and include the `doctor` output
 
 ---
 
-> **Tip:** Restarting the IDE or the AI client process resolves most MCP server hang issues — especially after editing configuration files like `~/.claude.json`, `~/.gemini/settings.json`, `~/.codex/config.toml`, or `opencode.json`.
+> **Tip:** Restarting the IDE or the AI client process resolves most MCP server hang issues — especially after editing configuration files like `~/.claude.json`, `~/.gemini/antigravity/mcp_config.json`, `~/.codex/config.toml`, or `opencode.json`.
 
 ---
 

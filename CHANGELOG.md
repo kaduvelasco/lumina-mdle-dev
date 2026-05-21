@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.1] — 2026-05-21
+
+### Changed
+
+- **Logo updated in `README.md` and `LEIAME.md`:** replaced `logo2.png` with `logo.png`.
+- **Migrated Gemini CLI → Antigravity CLI:** Google discontinued the `gemini` CLI binary (deadline: June 18, 2026) in favour of Antigravity CLI (`agy`). Updated all documentation, the `lumina-md install` auto-detection target, and the MCP configuration file path (`~/.gemini/settings.json` → `~/.gemini/antigravity/mcp_config.json`). The dedicated client guide was replaced by `docs/*/guides/clients/antigravity.md`.
+
+---
+
 ## [1.0.0] — 2026-05-20
 
 ### Fixed

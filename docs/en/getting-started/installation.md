@@ -22,7 +22,7 @@ Before starting, make sure you have the following installed on your machine:
 You will also need a **compatible MCP client** to interact with the server. See the officially supported clients:
 
 - [Claude Code](../guides/clients/claude-code.md)
-- [Gemini Code Assist](../guides/clients/gemini-code-assist.md)
+- [Antigravity CLI](../guides/clients/antigravity.md)
 - [OpenAI Codex](../guides/clients/codex.md)
 - [OpenCode](../guides/clients/opencode.md)
 
@@ -116,7 +116,7 @@ The AI will call the `doctor` tool via the MCP protocol and return a report with
 With the server installed, configure your MCP client:
 
 - [Configure Claude Code](../guides/clients/claude-code.md)
-- [Configure Gemini Code Assist](../guides/clients/gemini-code-assist.md)
+- [Configure Antigravity CLI](../guides/clients/antigravity.md)
 - [Configure OpenAI Codex](../guides/clients/codex.md)
 - [Configure OpenCode](../guides/clients/opencode.md)
 

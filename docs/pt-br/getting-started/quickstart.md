@@ -27,18 +27,9 @@ claude mcp list
 # → lumina-mdle-dev: npx -y lumina-mdle-dev (user scope)
 ```
 
-### Gemini Code Assist (CLI e VS Code)
+### Antigravity CLI
 
-**Via CLI (recomendado):**
-
-```bash
-gemini mcp add lumina-mdle-dev \
-  --command "npx" \
-  --args "-y,lumina-mdle-dev" \
-  --env MOODLE_PATH=/var/www/html/moodle
-```
-
-**Via arquivo de configuração** — crie ou edite `~/.gemini/settings.json`:
+Edite ou crie `~/.gemini/antigravity/mcp_config.json` e adicione o servidor sob o bloco `mcpServers`:
 
 ```json
 {
@@ -54,7 +45,7 @@ gemini mcp add lumina-mdle-dev \
 }
 ```
 
-Após configurar, reinicie a sessão do Gemini CLI ou recarregue a janela do VS Code (`Ctrl+Shift+P` → **Developer: Reload Window**) e ative o **modo Agent** no painel do Gemini.
+Após configurar, reinicie a sessão do Antigravity CLI (`Ctrl+C` e `agy` novamente).
 
 ### OpenAI Codex
 
@@ -94,7 +85,7 @@ Crie ou edite `opencode.json` na raiz da sua instalação Moodle:
 ```
 
 > Para instruções detalhadas de cada cliente — incluindo configuração de PATH para gerenciadores de versão como nvm, mise e asdf — veja os guias completos:
-> [Claude Code](../guides/clients/claude-code.md) · [Gemini Code Assist](../guides/clients/gemini-code-assist.md) · [OpenAI Codex](../guides/clients/codex.md) · [OpenCode](../guides/clients/opencode.md)
+> [Claude Code](../guides/clients/claude-code.md) · [Antigravity CLI](../guides/clients/antigravity.md) · [OpenAI Codex](../guides/clients/codex.md) · [OpenCode](../guides/clients/opencode.md)
 
 ---
 

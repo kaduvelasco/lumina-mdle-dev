@@ -355,10 +355,10 @@ The assistant will edit the file directly in the Moodle directory. In the next s
 
 **Claude Code** — no native session history, but `CLAUDE.md` is read automatically. Update it at the end of long sessions.
 
-**Gemini CLI** — supports saving and resuming sessions:
+**Antigravity CLI** — supports saving and resuming sessions:
 
 ```bash
-# Inside the Gemini CLI, save the current session
+# Inside Antigravity CLI, save the current session
 /chat save moodle-dev
 
 # Next time, resume where you left off

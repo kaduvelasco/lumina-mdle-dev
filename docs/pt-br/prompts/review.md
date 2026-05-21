@@ -102,7 +102,7 @@ Atualize o CLAUDE.md registrando o progresso da revisão do local_meuplugin:
 arquivos já revisados e pendências encontradas.
 ```
 
-**Gemini CLI** — para retomar a sessão exata:
+**Antigravity CLI** — para retomar a sessão exata:
 
 ```bash
 /chat save revisao-local-meuplugin

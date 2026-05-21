@@ -205,7 +205,7 @@ Claude will call the `doctor` tool and return a report with server status, Moodl
 
 ## ➡️ Next Steps
 
-- [Gemini Code Assist](./gemini-code-assist.md) — equivalent guide for VS Code
+- [Antigravity CLI](./antigravity.md) — equivalent guide for Google's terminal agent
 - [OpenAI Codex](./codex.md) — OpenAI's CLI with TOML configuration
 - [OpenCode](./opencode.md) — open-source agent with TUI interface
 - [Workflow Examples](../workflows/examples.md) — real-world use cases and ready-to-use prompts

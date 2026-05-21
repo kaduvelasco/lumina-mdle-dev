@@ -75,7 +75,7 @@ Atualize o CLAUDE.md registrando: o erro "Table doesn't exist" no local_meuplugi
 foi causado por X. Solução aplicada: Y.
 ```
 
-**Gemini CLI** — para retomar a sessão de debug exatamente de onde parou:
+**Antigravity CLI** — para retomar a sessão de debug exatamente de onde parou:
 
 ```bash
 /chat save debug-local-meuplugin

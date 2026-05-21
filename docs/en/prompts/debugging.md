@@ -75,7 +75,7 @@ Update CLAUDE.md recording: the "Table doesn't exist" error in local_myplugin
 was caused by X. Solution applied: Y.
 ```
 
-**Gemini CLI** — to resume the debug session exactly where you left off:
+**Antigravity CLI** — to resume the debug session exactly where you left off:
 
 ```bash
 /chat save debug-local-myplugin
