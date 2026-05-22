@@ -92,9 +92,15 @@ export class MoodleWatcher {
       ignore: ["vendor/**", "node_modules/**"],
     });
 
-    let count = 0;
+    if (devMarkers.length === 0) {
+      this.stderr("No dev plugins found (.indevelopment). Run generate_plugin_context on a plugin first.");
+      return 0;
+    }
 
-    for (const marker of devMarkers.slice(0, MAX_WATCHED_PLUGINS)) {
+    let count = 0;
+    const sorted = devMarkers.sort(); // deterministic order before slice
+
+    for (const marker of sorted.slice(0, MAX_WATCHED_PLUGINS)) {
       const pluginDir = resolve(marker, "..");
       count += this.watchPlugin(pluginDir);
     }

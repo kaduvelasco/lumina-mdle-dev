@@ -10,12 +10,11 @@
  */
 
 import { McpServer }              from "@modelcontextprotocol/sdk/server/mcp.js";
-import { resolve }                from "path";
+import { join, resolve }          from "path";
 import { z }                      from "zod";
-import { glob }                   from "glob";
 
 import { loadConfig, saveConfig }              from "../config.js";
-import { generateAll }                         from "../generators/moodle.js";
+import { generateAll, findDevPlugins }         from "../generators/moodle.js";
 import { generateAllForPlugin, PLUGIN_CONTEXT_FILES } from "../generators/plugin.js";
 import { detectMoodleInstall }                 from "../extractors/moodle-detect.js";
 import { globalCache }                         from "../cache.js";
@@ -101,24 +100,19 @@ export function registerUpdateTool(server: McpServer): void {
       if (include_plugins) {
         lines.push("", "## Plugin Context Updates", "");
 
-        const devMarkers = await glob("**/.indevelopment", {
-          cwd: moodlePath, absolute: true,
-          ignore: ["vendor/**", "node_modules/**"],
-        });
+        const devPluginDirs = await findDevPlugins(moodlePath);
 
-        if (devMarkers.length === 0) {
+        if (devPluginDirs.length === 0) {
           lines.push("No plugins marked as in development (.indevelopment).");
         } else {
-          lines.push(`Dev plugins found: ${devMarkers.length}`, "");
+          lines.push(`Dev plugins found: ${devPluginDirs.length}`, "");
 
-          for (const marker of devMarkers) {
-            // Use resolve() — not join() — to correctly navigate from absolute path
-            const pluginDir = resolve(marker, "..");
+          for (const pluginDir of devPluginDirs) {
 
             try {
               if (force) {
                 for (const f of PLUGIN_CONTEXT_FILES) {
-                  globalCache.invalidate(`${pluginDir}/${f}`);
+                  globalCache.invalidate(join(pluginDir, f));
                 }
               }
 

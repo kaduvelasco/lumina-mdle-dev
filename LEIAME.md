@@ -1,7 +1,7 @@
 # Lumina Moodle Developer 🎓🤖
 
 <p align="center">
-    <img src="docs/img/logo.png" alt="Lumina Moodle Developer" width="200px">
+    <img src="docs/img/logo.png" alt="Lumina Moodle Developer">
 </p>
 
 > **Transforme seu assistente de IA em um especialista em Moodle.**

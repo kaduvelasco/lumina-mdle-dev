@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.2] — 2026-05-22
+
+### Fixed
+
+- **`cli/install.ts`:** `inPath()` used `which` on all platforms — fails on Windows where `where` is required. Detection of all CLI targets (Claude, Codex, Antigravity, etc.) would silently fail on Windows.
+- **`tools/init.ts` + `tools/plugin.ts`:** File paths shown in tool responses were computed with `String.replace()` instead of `path.relative()`, producing incorrect output when the Moodle root path ended with a separator or on Windows (backslash separators).
+- **`watcher.ts`:** The `running` flag was set to `true` even when no `.indevelopment` markers existed — a subsequent `watch_plugins action='start'` would be rejected with "Watcher is already running" while nothing was actually being watched. Dev markers are now sorted before the `MAX_WATCHED_PLUGINS` slice, ensuring deterministic selection when the limit is reached.
+- **`generators/plugin.ts`:** Dead variable `suffix` in `generatePluginCallbackIndex` was assigned but never read.
+- **`generators/moodle.ts`:** `generateCtags` bypassed the `run()` cache helper — the ctags binary was invoked (or checked) on every `generateAll()` call, regardless of whether the `tags` file was already up to date.
+- **`config.ts`:** Inline comment incorrectly described the `.moodle-mcp` storage location as "the current working directory" (the file is stored in the user's home directory).
+- **`extractors/api.ts`:** `readdirSync` was called without `{ withFileTypes: true }`, requiring an extra `statSync` syscall per directory entry. In recursive mode, duplicate entries could be produced when a `PRIORITY_FILES` path overlapped with a subdirectory also reached by recursion; duplicates are now filtered via the `seen` Set.
+
+### Changed
+
+- **`extractors/capabilities.ts`:** Local `extractCapabilitiesBody` function (a full copy of the bracket-counting algorithm) replaced by `extractArrayBody(content, "capabilities")` from `utils/php-parser.ts`.
+- **`extractors/services.ts`:** Local `extractFunctionsBody` function replaced by `extractArrayBody(content, "functions")` — same shared utility.
+- **`tools/doctor.ts`:** Hardcoded `EXPECTED_PLUGIN_FILES` list replaced by the imported `PLUGIN_CONTEXT_FILES` constant from `generators/plugin.ts`. The doctor now automatically includes any future generated files without requiring a manual sync.
+- **`tools/batch.ts`:** Local `findDevPlugins` function removed — now imported from `generators/moodle.ts`.
+- **`tools/update.ts`:** Inline dev-plugin glob replaced by the shared `findDevPlugins` utility; `\`${pluginDir}/${f}\`` template literals replaced by `path.join()` for cross-platform correctness.
+- **`extractors/classes.ts`:** `extractClasses` now accepts an optional `globPattern` parameter (default: `"**/*.php"`), allowing callers to restrict the scan to a specific file pattern.
+- **`generators/moodle.ts`:** `generateClassesIndex` now uses `"**/classes/**/*.php"` instead of `"**/*.php"` — scanning the entire Moodle root for class declarations was unnecessarily slow on installations with thousands of PHP files.
+- **`generators/plugin.ts`:** `generateAllForPlugin` now pre-loads all extracted data once (`schema`, `events`, `tasks`, `services`, `capabilities`, `upgrade`, `classes`, `hooks`) into a `PreloadedPluginData` object before dispatching to generators — eliminates up to 6× redundant filesystem reads per plugin regeneration. All 11 per-plugin generators accept an optional `preloaded?: PreloadedPluginData` parameter and fall back to live extraction when called without it.
+
+### Added
+
+- **`generators/moodle.ts`:** `findDevPlugins(moodlePath): Promise<string[]>` exported as a shared utility for locating plugins marked with `.indevelopment`.
+
+---
+
 ## [1.0.1] — 2026-05-21
 
 ### Changed

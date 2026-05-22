@@ -13,7 +13,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { existsSync } from "fs";
-import { join, isAbsolute, resolve } from "path";
+import { join, isAbsolute, relative, resolve } from "path";
 import { z } from "zod";
 
 import { loadConfig }              from "../config.js";
@@ -181,7 +181,7 @@ export function registerPluginTool(server: McpServer): void {
       lines.push("");
       lines.push("Generated files:");
       for (const f of succeeded) {
-        const rel = f.file.replace(fullPluginPath + "/", "");
+        const rel = relative(fullPluginPath, f.file);
         lines.push(`  ✔ ${rel}`);
       }
 

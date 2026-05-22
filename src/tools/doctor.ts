@@ -28,6 +28,7 @@ import { loadConfig, getConfigFilePath } from "../config.js";
 import { globalCache }                  from "../cache.js";
 import { isMoodleRoot }                  from "../extractors/moodle-detect.js";
 import { detectPlugin }                  from "../extractors/plugin.js";
+import { PLUGIN_CONTEXT_FILES }          from "../generators/plugin.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -47,20 +48,6 @@ const EXPECTED_GLOBAL_FILES = [
   "MOODLE_PLUGIN_INDEX.md",
   "MOODLE_DEV_RULES.md",
   "MOODLE_PLUGIN_GUIDE.md",
-];
-
-const EXPECTED_PLUGIN_FILES = [
-  "PLUGIN_AI_CONTEXT.md",
-  "PLUGIN_CONTEXT.md",
-  "PLUGIN_STRUCTURE.md",
-  "PLUGIN_DB_TABLES.md",
-  "PLUGIN_EVENTS.md",
-  "PLUGIN_DEPENDENCIES.md",
-  "PLUGIN_ARCHITECTURE.md",
-  "PLUGIN_FUNCTION_INDEX.md",
-  "PLUGIN_CALLBACK_INDEX.md",
-  "PLUGIN_ENDPOINT_INDEX.md",
-  "PLUGIN_RUNTIME_FLOW.md",
 ];
 
 const STALE_THRESHOLD_DAYS = 7;
@@ -250,7 +237,7 @@ export function registerDoctorTool(server: McpServer): void {
 
           lines.push(`  Plugin: ${componentLabel}`);
 
-          for (const file of EXPECTED_PLUGIN_FILES) {
+          for (const file of PLUGIN_CONTEXT_FILES) {
             const fullPath = join(pluginDir, file);
             const age      = fileAgeDays(fullPath);
 

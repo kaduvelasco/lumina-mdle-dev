@@ -2,12 +2,12 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
   "name": "io.github.kaduvelasco/lumina-mdle-dev",
   "description": "MCP server for Moodle plugin development. Gives AI assistants full structural understanding of a Moodle installation — APIs, plugins, database schema, events, tasks, capabilities, Hook API (4.3+), and coding standards. Reads PHP source files directly from disk; no Moodle API token required.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "packages": [
     {
       "registry_type": "npm",
       "identifier": "lumina-mdle-dev",
-      "version": "1.0.1"
+      "version": "1.0.2"
     }
   ]
 }

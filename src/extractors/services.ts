@@ -11,7 +11,7 @@
 
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
-import { extractString, extractBool } from "../utils/php-parser.js";
+import { extractArrayBody, extractString, extractBool } from "../utils/php-parser.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -34,38 +34,8 @@ export interface ServicesExtraction {
 }
 
 // ---------------------------------------------------------------------------
-// Block splitter (reused pattern from events.ts)
+// Block splitter
 // ---------------------------------------------------------------------------
-
-/**
- * Extracts the $functions = [...] body from a PHP file.
- */
-function extractFunctionsBody(content: string): string | null {
-  const startMatch = content.match(/\$functions\s*=\s*/);
-  if (!startMatch || startMatch.index === undefined) return null;
-
-  let startIdx = -1;
-  for (let i = startMatch.index + startMatch[0].length; i < content.length; i++) {
-    if (content[i] === "[" || content[i] === "(") { startIdx = i; break; }
-  }
-  if (startIdx === -1) return null;
-
-  const openChar  = content[startIdx];
-  const closeChar = openChar === "[" ? "]" : ")";
-  let depth = 0;
-  let end   = -1;
-
-  for (let i = startIdx; i < content.length; i++) {
-    if (content[i] === openChar) depth++;
-    else if (content[i] === closeChar) {
-      depth--;
-      if (depth === 0) { end = i; break; }
-    }
-  }
-
-  if (end === -1) return null;
-  return content.slice(startIdx + 1, end);
-}
 
 /**
  * Splits the $functions body into top-level named entries.
@@ -117,7 +87,7 @@ export function parseServicesPhp(filePath: string): ServicesExtraction | null {
   if (!existsSync(filePath)) return null;
 
   const content = readFileSync(filePath, "utf-8");
-  const body    = extractFunctionsBody(content);
+  const body    = extractArrayBody(content, "functions");
 
   if (body === null) return { file: filePath, functions: [] };
 

@@ -11,6 +11,7 @@
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { z } from "zod";
+import { extractArrayBody } from "../utils/php-parser.js";
 
 // ---------------------------------------------------------------------------
 // Zod schema
@@ -44,36 +45,6 @@ export interface CapabilitiesExtraction {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/**
- * Extracts the $capabilities array body from a PHP file.
- */
-function extractCapabilitiesBody(content: string): string | null {
-  const startMatch = content.match(/\$capabilities\s*=\s*/);
-  if (!startMatch || startMatch.index === undefined) return null;
-
-  let startIdx = -1;
-  for (let i = startMatch.index + startMatch[0].length; i < content.length; i++) {
-    if (content[i] === "[" || content[i] === "(") { startIdx = i; break; }
-  }
-  if (startIdx === -1) return null;
-
-  const openChar  = content[startIdx];
-  const closeChar = openChar === "[" ? "]" : ")";
-  let depth = 0;
-  let end   = -1;
-
-  for (let i = startIdx; i < content.length; i++) {
-    if (content[i] === openChar) depth++;
-    else if (content[i] === closeChar) {
-      depth--;
-      if (depth === 0) { end = i; break; }
-    }
-  }
-
-  if (end === -1) return null;
-  return content.slice(startIdx + 1, end);
-}
 
 /**
  * Splits the capabilities body into named entries.
@@ -174,7 +145,7 @@ export function parseAccessPhp(filePath: string): CapabilitiesExtraction | null 
   if (!existsSync(filePath)) return null;
 
   const content = readFileSync(filePath, "utf-8");
-  const body    = extractCapabilitiesBody(content);
+  const body    = extractArrayBody(content, "capabilities");
 
   if (body === null) return { file: filePath, capabilities: [] };
 

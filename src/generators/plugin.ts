@@ -23,14 +23,14 @@ import {
 import { glob }                                                            from "glob";
 
 import { detectPlugin, PluginInfo }                                        from "../extractors/plugin.js";
-import { extractPluginSchema, tableToMarkdown }                            from "../extractors/schema.js";
-import { extractPluginEvents }                                             from "../extractors/events.js";
-import { extractPluginTasks, formatCronSchedule }                          from "../extractors/tasks.js";
-import { extractPluginServices }                                           from "../extractors/services.js";
-import { extractPluginCapabilities }                                       from "../extractors/capabilities.js";
-import { extractPluginClasses }                                            from "../extractors/classes.js";
-import { extractPluginUpgrade }                                            from "../extractors/upgrade.js";
-import { extractPluginHooks, pluginUsesHookApi, HooksExtraction } from "../extractors/hooks.js";
+import { extractPluginSchema, tableToMarkdown, DbSchema }                  from "../extractors/schema.js";
+import { extractPluginEvents, EventsExtraction }                           from "../extractors/events.js";
+import { extractPluginTasks, formatCronSchedule, TasksExtraction }         from "../extractors/tasks.js";
+import { extractPluginServices, ServicesExtraction }                       from "../extractors/services.js";
+import { extractPluginCapabilities, CapabilitiesExtraction }               from "../extractors/capabilities.js";
+import { extractPluginClasses, ClassesExtraction }                         from "../extractors/classes.js";
+import { extractPluginUpgrade, UpgradeExtraction }                         from "../extractors/upgrade.js";
+import { extractPluginHooks, pluginUsesHookApi, HooksExtraction }          from "../extractors/hooks.js";
 import { globalCache, getPluginSourceFiles }                               from "../cache.js";
 
 // ---------------------------------------------------------------------------
@@ -42,6 +42,18 @@ export type { GeneratorResult };
 export interface PluginGeneratorResult {
   plugin: string;
   files:  Array<GeneratorResult>;
+}
+
+/** All data extracted from a plugin in a single pass, shared across generators. */
+export interface PreloadedPluginData {
+  schema:       DbSchema | null;
+  events:       EventsExtraction | null;
+  tasks:        TasksExtraction | null;
+  services:     ServicesExtraction | null;
+  capabilities: CapabilitiesExtraction | null;
+  upgrade:      UpgradeExtraction | null;
+  classes:      ClassesExtraction;
+  hooks:        HooksExtraction;
 }
 
 // ---------------------------------------------------------------------------
@@ -140,15 +152,18 @@ function extractFunctionsFromFile(filePath: string): string[] {
 // Individual generators
 // ---------------------------------------------------------------------------
 
-export function generatePluginContext(info: PluginInfo): GeneratorResult {
+export function generatePluginContext(
+  info:      PluginInfo,
+  preloaded?: PreloadedPluginData
+): GeneratorResult {
   const output = join(info.path, "PLUGIN_CONTEXT.md");
 
   try {
-    const schema       = extractPluginSchema(info.path);
-    const events       = extractPluginEvents(info.path);
-    const tasks        = extractPluginTasks(info.path);
-    const services     = extractPluginServices(info.path);
-    const capabilities = extractPluginCapabilities(info.path);
+    const schema       = preloaded?.schema       ?? extractPluginSchema(info.path);
+    const events       = preloaded?.events       ?? extractPluginEvents(info.path);
+    const tasks        = preloaded?.tasks        ?? extractPluginTasks(info.path);
+    const services     = preloaded?.services     ?? extractPluginServices(info.path);
+    const capabilities = preloaded?.capabilities ?? extractPluginCapabilities(info.path);
 
     const content = [
       header(`Plugin Context: ${info.component}`, `Metadata and summary for ${info.displayName || info.name}.`),
@@ -232,11 +247,14 @@ export function generatePluginStructure(info: PluginInfo): GeneratorResult {
   }
 }
 
-export function generatePluginDbTables(info: PluginInfo): GeneratorResult {
+export function generatePluginDbTables(
+  info:      PluginInfo,
+  preloaded?: PreloadedPluginData
+): GeneratorResult {
   const output = join(info.path, "PLUGIN_DB_TABLES.md");
 
   try {
-    const schema = extractPluginSchema(info.path);
+    const schema = preloaded?.schema ?? extractPluginSchema(info.path);
     const lines  = [
       header(`Plugin Database Tables: ${info.component}`, "Full database schema including fields, keys and indexes."),
     ];
@@ -256,11 +274,14 @@ export function generatePluginDbTables(info: PluginInfo): GeneratorResult {
   }
 }
 
-export function generatePluginEvents(info: PluginInfo): GeneratorResult {
+export function generatePluginEvents(
+  info:      PluginInfo,
+  preloaded?: PreloadedPluginData
+): GeneratorResult {
   const output = join(info.path, "PLUGIN_EVENTS.md");
 
   try {
-    const events = extractPluginEvents(info.path);
+    const events = preloaded?.events ?? extractPluginEvents(info.path);
     const lines  = [
       header(`Plugin Events: ${info.component}`, "Event observers registered by this plugin."),
     ];
@@ -284,17 +305,17 @@ export function generatePluginEvents(info: PluginInfo): GeneratorResult {
 }
 
 export async function generatePluginDependencies(
-  info: PluginInfo,
-  preloadedHooks?: HooksExtraction
+  info:      PluginInfo,
+  preloaded?: PreloadedPluginData
 ): Promise<GeneratorResult> {
   const output = join(info.path, "PLUGIN_DEPENDENCIES.md");
 
   return safely(output, async () => {
-    const tasks        = extractPluginTasks(info.path);
-    const services     = extractPluginServices(info.path);
-    const capabilities = extractPluginCapabilities(info.path);
-    const upgrade      = extractPluginUpgrade(info.path);
-    const hooks        = preloadedHooks ?? await extractPluginHooks(info.path, info.component);
+    const tasks        = preloaded?.tasks        ?? extractPluginTasks(info.path);
+    const services     = preloaded?.services     ?? extractPluginServices(info.path);
+    const capabilities = preloaded?.capabilities ?? extractPluginCapabilities(info.path);
+    const upgrade      = preloaded?.upgrade      ?? extractPluginUpgrade(info.path);
+    const hooks        = preloaded?.hooks        ?? await extractPluginHooks(info.path, info.component);
 
     const lines = [
       header(`Plugin Dependencies: ${info.component}`,
@@ -435,14 +456,14 @@ export async function generatePluginFunctionIndex(info: PluginInfo): Promise<Gen
 }
 
 export async function generatePluginCallbackIndex(
-  info: PluginInfo,
-  preloadedHooks?: HooksExtraction
+  info:      PluginInfo,
+  preloaded?: PreloadedPluginData
 ): Promise<GeneratorResult> {
   const output  = join(info.path, "PLUGIN_CALLBACK_INDEX.md");
   const prefix  = `${info.component}_`;
 
   return safely(output, async () => {
-    const hooks = preloadedHooks ?? await extractPluginHooks(info.path, info.component);
+    const hooks = preloaded?.hooks ?? await extractPluginHooks(info.path, info.component);
 
     const lines = [
       header(
@@ -473,7 +494,6 @@ export async function generatePluginCallbackIndex(
       lines.push(`### ${rel}`, "");
       for (const fn of fns) {
         // Flag functions that have known hook replacements
-        const suffix     = fn.replace(prefix, "");
         const hasWarning = hooks.legacyWarnings.some((w) => w.legacyFunction === fn);
         const depr       = hasWarning ? " ⚠ _(has Hook API replacement)_" : "";
         lines.push(`- \`${fn}()\`${depr}`);
@@ -539,11 +559,14 @@ export async function generatePluginCallbackIndex(
   });
 }
 
-export async function generatePluginEndpointIndex(info: PluginInfo): Promise<GeneratorResult> {
-  const output   = join(info.path, "PLUGIN_ENDPOINT_INDEX.md");
+export async function generatePluginEndpointIndex(
+  info:      PluginInfo,
+  preloaded?: PreloadedPluginData
+): Promise<GeneratorResult> {
+  const output = join(info.path, "PLUGIN_ENDPOINT_INDEX.md");
 
   return safely(output, async () => {
-    const services = extractPluginServices(info.path);
+    const services = preloaded?.services ?? extractPluginServices(info.path);
 
     const lines = [
       header(`Plugin Endpoint Index: ${info.component}`, "Web services, AJAX endpoints, and AMD modules."),
@@ -591,16 +614,19 @@ export async function generatePluginEndpointIndex(info: PluginInfo): Promise<Gen
   });
 }
 
-export async function generatePluginRuntimeFlow(info: PluginInfo): Promise<GeneratorResult> {
+export async function generatePluginRuntimeFlow(
+  info:      PluginInfo,
+  preloaded?: PreloadedPluginData
+): Promise<GeneratorResult> {
   const output = join(info.path, "PLUGIN_RUNTIME_FLOW.md");
 
   return safely(output, async () => {
-    const entryPoints   = ["index.php","view.php","edit.php","manage.php","report.php","ajax.php"];
-    const foundEntries  = entryPoints.filter((f) => existsSync(join(info.path, f)));
-    const classes       = await extractPluginClasses(info.path);
-    const events        = extractPluginEvents(info.path);
-    const tasks         = extractPluginTasks(info.path);
-    const services      = extractPluginServices(info.path);
+    const entryPoints  = ["index.php","view.php","edit.php","manage.php","report.php","ajax.php"];
+    const foundEntries = entryPoints.filter((f) => existsSync(join(info.path, f)));
+    const classes      = preloaded?.classes  ?? await extractPluginClasses(info.path);
+    const events       = preloaded?.events   ?? extractPluginEvents(info.path);
+    const tasks        = preloaded?.tasks    ?? extractPluginTasks(info.path);
+    const services     = preloaded?.services ?? extractPluginServices(info.path);
 
     const lines = [
       header(`Plugin Runtime Flow: ${info.component}`, "Entry points, execution flow, and runtime components."),
@@ -659,11 +685,14 @@ export async function generatePluginRuntimeFlow(info: PluginInfo): Promise<Gener
   });
 }
 
-export async function generatePluginArchitecture(info: PluginInfo): Promise<GeneratorResult> {
-  const output  = join(info.path, "PLUGIN_ARCHITECTURE.md");
+export async function generatePluginArchitecture(
+  info:      PluginInfo,
+  preloaded?: PreloadedPluginData
+): Promise<GeneratorResult> {
+  const output = join(info.path, "PLUGIN_ARCHITECTURE.md");
 
   return safely(output, async () => {
-    const classes = await extractPluginClasses(info.path);
+    const classes = preloaded?.classes ?? await extractPluginClasses(info.path);
     const byDir: Record<string, typeof classes.classes> = {};
 
     for (const cls of classes.classes) {
@@ -711,19 +740,19 @@ export async function generatePluginArchitecture(info: PluginInfo): Promise<Gene
 }
 
 export async function generatePluginAiContext(
-  info: PluginInfo,
-  preloadedHooks?: HooksExtraction
+  info:      PluginInfo,
+  preloaded?: PreloadedPluginData
 ): Promise<GeneratorResult> {
   const output = join(info.path, "PLUGIN_AI_CONTEXT.md");
 
   return safely(output, async () => {
-    const schema       = extractPluginSchema(info.path);
-    const events       = extractPluginEvents(info.path);
-    const tasks        = extractPluginTasks(info.path);
-    const services     = extractPluginServices(info.path);
-    const capabilities = extractPluginCapabilities(info.path);
-    const classes      = await extractPluginClasses(info.path);
-    const hooks        = preloadedHooks ?? await extractPluginHooks(info.path, info.component);
+    const schema       = preloaded?.schema       ?? extractPluginSchema(info.path);
+    const events       = preloaded?.events       ?? extractPluginEvents(info.path);
+    const tasks        = preloaded?.tasks        ?? extractPluginTasks(info.path);
+    const services     = preloaded?.services     ?? extractPluginServices(info.path);
+    const capabilities = preloaded?.capabilities ?? extractPluginCapabilities(info.path);
+    const classes      = preloaded?.classes      ?? await extractPluginClasses(info.path);
+    const hooks        = preloaded?.hooks        ?? await extractPluginHooks(info.path, info.component);
 
     const lines = [
       header(`AI Context: ${info.component}`,
@@ -832,7 +861,21 @@ export async function generateAllForPlugin(
   const sources = getPluginSourceFiles(pluginPath);
   const results: GeneratorResult[] = [];
 
-  const hooks = await extractPluginHooks(pluginPath, info.component);
+  // Pre-load all extracted data once — shared across all generators in this call
+  const [classes, hooks] = await Promise.all([
+    extractPluginClasses(pluginPath),
+    extractPluginHooks(pluginPath, info.component),
+  ]);
+  const preloaded: PreloadedPluginData = {
+    schema:       extractPluginSchema(pluginPath),
+    events:       extractPluginEvents(pluginPath),
+    tasks:        extractPluginTasks(pluginPath),
+    services:     extractPluginServices(pluginPath),
+    capabilities: extractPluginCapabilities(pluginPath),
+    upgrade:      extractPluginUpgrade(pluginPath),
+    classes,
+    hooks,
+  };
 
   async function run(
     outputFile: string,
@@ -847,17 +890,17 @@ export async function generateAllForPlugin(
 
   // All per-plugin generators are independent — run in parallel
   await Promise.all([
-    run(join(pluginPath, "PLUGIN_CONTEXT.md"),        () => generatePluginContext(info)),
+    run(join(pluginPath, "PLUGIN_CONTEXT.md"),        () => generatePluginContext(info, preloaded)),
     run(join(pluginPath, "PLUGIN_STRUCTURE.md"),      () => generatePluginStructure(info)),
-    run(join(pluginPath, "PLUGIN_DB_TABLES.md"),      () => generatePluginDbTables(info)),
-    run(join(pluginPath, "PLUGIN_EVENTS.md"),         () => generatePluginEvents(info)),
-    run(join(pluginPath, "PLUGIN_DEPENDENCIES.md"),   () => generatePluginDependencies(info, hooks)),
-    run(join(pluginPath, "PLUGIN_CALLBACK_INDEX.md"), () => generatePluginCallbackIndex(info, hooks)),
+    run(join(pluginPath, "PLUGIN_DB_TABLES.md"),      () => generatePluginDbTables(info, preloaded)),
+    run(join(pluginPath, "PLUGIN_EVENTS.md"),         () => generatePluginEvents(info, preloaded)),
+    run(join(pluginPath, "PLUGIN_DEPENDENCIES.md"),   () => generatePluginDependencies(info, preloaded)),
+    run(join(pluginPath, "PLUGIN_CALLBACK_INDEX.md"), () => generatePluginCallbackIndex(info, preloaded)),
     run(join(pluginPath, "PLUGIN_FUNCTION_INDEX.md"), () => generatePluginFunctionIndex(info)),
-    run(join(pluginPath, "PLUGIN_ENDPOINT_INDEX.md"), () => generatePluginEndpointIndex(info)),
-    run(join(pluginPath, "PLUGIN_RUNTIME_FLOW.md"),   () => generatePluginRuntimeFlow(info)),
-    run(join(pluginPath, "PLUGIN_ARCHITECTURE.md"),   () => generatePluginArchitecture(info)),
-    run(join(pluginPath, "PLUGIN_AI_CONTEXT.md"),     () => generatePluginAiContext(info, hooks)),
+    run(join(pluginPath, "PLUGIN_ENDPOINT_INDEX.md"), () => generatePluginEndpointIndex(info, preloaded)),
+    run(join(pluginPath, "PLUGIN_RUNTIME_FLOW.md"),   () => generatePluginRuntimeFlow(info, preloaded)),
+    run(join(pluginPath, "PLUGIN_ARCHITECTURE.md"),   () => generatePluginArchitecture(info, preloaded)),
+    run(join(pluginPath, "PLUGIN_AI_CONTEXT.md"),     () => generatePluginAiContext(info, preloaded)),
   ]);
 
   if (markAsDev) {

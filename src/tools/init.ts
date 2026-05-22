@@ -16,7 +16,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { existsSync } from "fs";
-import { join } from "path";
+import { join, relative } from "path";
 import { z } from "zod";
 
 import { saveConfig, loadConfig, getConfigFilePath } from "../config.js";
@@ -163,7 +163,7 @@ export function registerInitTool(server: McpServer): void {
       lines.push("");
       lines.push("Generated files:");
       for (const r of succeeded) {
-        const rel = r.file.replace(moodle_path + "/", "");
+        const rel = relative(moodle_path, r.file);
         lines.push(`  ✔ ${rel}`);
       }
 

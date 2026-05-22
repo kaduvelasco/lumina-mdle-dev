@@ -24,7 +24,7 @@
  * and developers need to know about them to avoid or migrate away from them.
  */
 
-import { readFileSync, existsSync, readdirSync, statSync } from "fs";
+import { readFileSync, existsSync, readdirSync } from "fs";
 import { join, basename } from "path";
 
 // ---------------------------------------------------------------------------
@@ -327,18 +327,19 @@ function getPhpFiles(dirPath: string, recurse = false): string[] {
   }
 
   try {
-    const entries = readdirSync(dirPath);
+    const entries = readdirSync(dirPath, { withFileTypes: true });
     for (const entry of entries) {
-      const fullPath = join(dirPath, entry);
-      const stat     = statSync(fullPath);
+      const fullPath = join(dirPath, entry.name);
 
-      if (stat.isDirectory() && recurse) {
+      if (entry.isDirectory() && recurse) {
         if (SKIP_PATTERNS.some((p) => p.test(fullPath))) continue;
-        files.push(...getPhpFiles(fullPath, recurse));
+        for (const f of getPhpFiles(fullPath, recurse)) {
+          if (!seen.has(f)) { files.push(f); seen.add(f); }
+        }
         continue;
       }
 
-      if (stat.isFile() && entry.endsWith(".php") && !seen.has(fullPath)) {
+      if (entry.isFile() && entry.name.endsWith(".php") && !seen.has(fullPath)) {
         files.push(fullPath);
       }
     }

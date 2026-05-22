@@ -13,7 +13,7 @@
  */
 
 import { existsSync }                  from "fs";
-import { join, relative }              from "path";
+import { join, relative, resolve }     from "path";
 import { glob }                        from "glob";
 import { execFile }                    from "child_process";
 import { promisify }                   from "util";
@@ -38,6 +38,19 @@ import {
 } from "../utils/generator-helpers.js";
 
 export type { GeneratorResult };
+
+/**
+ * Finds all plugin directories marked as in development (.indevelopment).
+ * Shared by tools that need to iterate over dev plugins.
+ */
+export async function findDevPlugins(moodlePath: string): Promise<string[]> {
+  const markers = await glob("**/.indevelopment", {
+    cwd:    moodlePath,
+    absolute: true,
+    ignore: ["vendor/**", "node_modules/**"],
+  });
+  return markers.map((m) => resolve(m, ".."));
+}
 
 /**
  * Finds plugin directories using the canonical type→directory map.
@@ -362,7 +375,8 @@ export async function generateClassesIndex(moodlePath: string): Promise<Generato
   const output = join(moodlePath, "MOODLE_CLASSES_INDEX.md");
 
   return safely(output, async () => {
-    const extraction = await extractClasses(moodlePath, moodlePath);
+    // Restrict to classes/ directories — avoids scanning all PHP files in the installation
+    const extraction = await extractClasses(moodlePath, moodlePath, "**/classes/**/*.php");
 
     const lines = [
       header("Moodle Classes Index", "All PHP classes, interfaces, traits and enums."),
@@ -814,7 +828,7 @@ export async function generateAll(
   await run(join(moodlePath, "MOODLE_AI_INDEX.md"),
     () => generateAiIndex(moodlePath, moodleVersion));
 
-  results.push(await generateCtags(moodlePath));
+  await run(join(moodlePath, "tags"), () => generateCtags(moodlePath));
 
   return results;
 }

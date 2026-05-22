@@ -34,7 +34,8 @@ interface Target {
 // ---------------------------------------------------------------------------
 
 function inPath(binary: string): boolean {
-  return spawnSync("which", [binary], { stdio: "pipe" }).status === 0;
+  const checker = process.platform === "win32" ? "where" : "which";
+  return spawnSync(checker, [binary], { stdio: "pipe" }).status === 0;
 }
 
 function readJson(filePath: string): Record<string, unknown> {

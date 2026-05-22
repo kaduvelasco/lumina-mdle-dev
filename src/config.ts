@@ -97,7 +97,7 @@ function loadFromEnv(): MoodleConfig | null {
  *
  * Resolution order:
  *   1. MOODLE_PATH environment variable (Docker/CI friendly)
- *   2. .moodle-mcp file in the current working directory
+ *   2. .moodle-mcp file in the user's home directory
  *
  * Returns null if neither source provides a MOODLE_PATH.
  */

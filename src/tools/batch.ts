@@ -29,7 +29,7 @@ import { glob }               from "glob";
 
 import { loadConfig }                              from "../config.js";
 import { generateAllForPlugin, PLUGIN_CONTEXT_FILES } from "../generators/plugin.js";
-import { generateAiIndex }                        from "../generators/moodle.js";
+import { generateAiIndex, findDevPlugins }         from "../generators/moodle.js";
 import { detectPlugin }                           from "../extractors/plugin.js";
 import { globalCache }                            from "../cache.js";
 import { resolvePluginPath, PLUGIN_TYPE_TO_DIR }  from "../utils/plugin-types.js";
@@ -50,20 +50,6 @@ interface BatchPluginResult {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/**
- * Finds all plugin directories marked as in development (.indevelopment).
- */
-async function findDevPlugins(moodlePath: string): Promise<string[]> {
-  const markers = await glob("**/.indevelopment", {
-    cwd:      moodlePath,
-    absolute: true,
-    ignore:   ["vendor/**", "node_modules/**"],
-  });
-
-  // Use resolve() — not join() — to correctly navigate from absolute paths
-  return markers.map((m) => resolve(m, ".."));
-}
 
 /**
  * Finds all plugin directories using the canonical type→directory map.

@@ -56,21 +56,23 @@ A função de entrada é `generateAll(moodlePath, moodleVersion)` que executa to
 
 Geram arquivos dentro do **diretório de cada plugin**. Chamados por `generate_plugin_context` e `plugin_batch`.
 
-A função de entrada é `generateAllForPlugin(pluginPath, moodlePath, moodleVersion)` que executa todos os generators abaixo em sequência.
+A função de entrada é `generateAllForPlugin(pluginPath, moodlePath, markAsDev?)` que executa todos os generators abaixo em paralelo.
 
-| Função | Arquivo gerado | Extractors usados |
-|--------|---------------|-------------------|
-| `generatePluginContext` | `PLUGIN_CONTEXT.md` | `plugin` |
-| `generatePluginStructure` | `PLUGIN_STRUCTURE.md` | — (leitura de diretório) |
+Todos os generators recebem um objeto `PreloadedPluginData` compartilhado — o conjunto completo de dados extraídos (schema, events, tasks, services, capabilities, upgrade, classes, hooks) pré-carregado uma única vez antes da execução paralela.
+
+| Função | Arquivo gerado | Dados usados de `PreloadedPluginData` |
+|--------|---------------|---------------------------------------|
+| `generatePluginContext` | `PLUGIN_CONTEXT.md` | `schema`, `events`, `tasks`, `services`, `capabilities` |
+| `generatePluginStructure` | `PLUGIN_STRUCTURE.md` | — (somente leitura de diretório) |
 | `generatePluginDbTables` | `PLUGIN_DB_TABLES.md` | `schema` |
 | `generatePluginEvents` | `PLUGIN_EVENTS.md` | `events` |
 | `generatePluginDependencies` | `PLUGIN_DEPENDENCIES.md` | `tasks`, `services`, `capabilities`, `hooks`, `upgrade` |
-| `generatePluginFunctionIndex` | `PLUGIN_FUNCTION_INDEX.md` | `api` (escopo do plugin) |
+| `generatePluginFunctionIndex` | `PLUGIN_FUNCTION_INDEX.md` | — (glob + leitura de arquivo) |
 | `generatePluginCallbackIndex` | `PLUGIN_CALLBACK_INDEX.md` | `hooks` |
 | `generatePluginEndpointIndex` | `PLUGIN_ENDPOINT_INDEX.md` | `services` |
-| `generatePluginRuntimeFlow` | `PLUGIN_RUNTIME_FLOW.md` | `plugin`, `schema`, `events` |
-| `generatePluginArchitecture` | `PLUGIN_ARCHITECTURE.md` | todos os anteriores |
-| `generatePluginAiContext` | `PLUGIN_AI_CONTEXT.md` | lê os `.md` já gerados |
+| `generatePluginRuntimeFlow` | `PLUGIN_RUNTIME_FLOW.md` | `classes`, `events`, `tasks`, `services` |
+| `generatePluginArchitecture` | `PLUGIN_ARCHITECTURE.md` | `classes` |
+| `generatePluginAiContext` | `PLUGIN_AI_CONTEXT.md` | todos os campos de `PreloadedPluginData` |
 
 ---
 
@@ -135,25 +137,21 @@ Arquivos presentes nesse conjunto são excluídos da árvore de diretórios most
 
 ### `PLUGIN_AI_CONTEXT.md` — o consolidador
 
-O `generatePluginAiContext` é sempre o **último** a ser executado na sequência de generators de plugin. Em vez de chamar extractors diretamente, ele **lê os arquivos `.md` já gerados pelos outros generators** e consolida as seções mais relevantes em um único arquivo otimizado para ser o ponto de entrada da IA.
-
-Isso tem duas vantagens:
-1. Não duplica lógica de extração — reutiliza o que já foi processado
-2. O arquivo final reflete exatamente o estado atual dos demais arquivos
+O `generatePluginAiContext` consolida os dados mais relevantes do objeto `PreloadedPluginData` (schema, events, tasks, services, capabilities, classes, hooks) em um único arquivo otimizado para ser o ponto de entrada da IA. Executa em paralelo com os demais generators — todos os 11 compartilham os mesmos dados pré-carregados.
 
 ---
 
-### Generators globais em paralelo vs. plugin em sequência
+### Generators globais e de plugin: ambos em paralelo
 
 Os generators globais em `generateAll()` executam em **paralelo** — são independentes entre si e operam em arquivos diferentes, então não há risco de condição de corrida.
 
-Os generators de plugin em `generateAllForPlugin()` executam em **sequência** — `generatePluginAiContext` precisa que todos os outros já tenham escrito seus arquivos antes de consolidá-los.
+Os generators de plugin em `generateAllForPlugin()` também executam em **paralelo** — a extração de dados é feita uma única vez antes da execução (`PreloadedPluginData`), portanto cada generator recebe dados completos desde o início e não tem dependência dos demais.
 
 ---
 
 ### `generateCtags` — geração opcional de ctags
 
-O generator de ctags executa o comando `ctags` via `execSync` apenas se o binário `universal-ctags` estiver disponível no PATH. Se não estiver, retorna `skipped: true` sem erro. O arquivo `tags` gerado na raiz do Moodle permite navegação rápida de símbolos em editores compatíveis.
+O generator de ctags executa o comando `ctags` via `execFileAsync` apenas se o binário `universal-ctags` estiver disponível no PATH. Passa pelo helper de cache `run()` como todos os outros generators globais — se o arquivo `tags` for mais recente que os padrões de fonte monitorados, a execução do ctags é pulada. Se o ctags não estiver instalado, o generator retorna um resultado de erro não-fatal e o arquivo `tags` não é criado.
 
 ---
 

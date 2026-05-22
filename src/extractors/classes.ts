@@ -130,8 +130,9 @@ function parsePhpFile(filePath: string, root: string): PhpClass[] {
  * Extracts all PHP class declarations from a directory tree.
  */
 export async function extractClasses(
-  dirPath:   string,
-  rootPath?: string
+  dirPath:     string,
+  rootPath?:   string,
+  globPattern = "**/*.php"
 ): Promise<ClassesExtraction> {
   const root = rootPath ?? dirPath;
 
@@ -139,7 +140,7 @@ export async function extractClasses(
     return { directory: dirPath, classes: [] };
   }
 
-  const files = await glob("**/*.php", {
+  const files = await glob(globPattern, {
     cwd:      dirPath,
     absolute: true,
     ignore:   ["**/vendor/**", "**/node_modules/**"],
