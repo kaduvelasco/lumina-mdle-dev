@@ -130,6 +130,8 @@ O servidor **nunca se comunica com servidores externos** e **nunca modifica arqu
 
 ## 📊 Status do projeto
 
+> **v1.1.0:** atualizações de dependências (zod v4, express v5, archiver v8, eslint v10, typescript v6) e melhorias de qualidade de código — invalidação de cache por índice em `generateAll`, utilitário `isWithinMoodle` para segurança de paths, `pluginInfoCache` para reduzir leituras de disco, notificações do watcher via `sendLoggingMessage` e remoção de exportações e parâmetros não utilizados. Veja [CHANGELOG.md](./CHANGELOG.md) para detalhes.
+>
 > **v1.0.0:** versão inicial.
 
 ### Tools disponíveis

@@ -189,13 +189,6 @@ export function detectPlugin(pluginPath: string): PluginInfo {
 }
 
 /**
- * Returns all known Moodle plugin type mappings.
- */
-export function getPluginTypeMap(): Record<string, string> {
-  return { ...PLUGIN_TYPE_TO_DIR };
-}
-
-/**
  * Checks whether a given directory looks like a Moodle plugin
  * (has a version.php file at its root).
  */

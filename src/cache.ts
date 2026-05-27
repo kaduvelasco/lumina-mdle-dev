@@ -118,13 +118,6 @@ export class MtimeCache {
     return { ...this.stats };
   }
 
-  /**
-   * Resets statistics counters.
-   */
-  resetStats(): void {
-    this.stats = { hits: 0, misses: 0, skips: 0 };
-  }
-
   // -------------------------------------------------------------------------
   // Private helpers
   // -------------------------------------------------------------------------
@@ -174,8 +167,10 @@ export function getPluginSourceFiles(pluginPath: string): string[] {
 }
 
 /**
- * Returns the list of source files that affect global Moodle indexes.
- * These are scanned broadly — any db/ file under the Moodle root.
+ * Returns the structural source files that signal a Moodle upgrade or core lib change.
+ * Used as the invalidation signal for structural/summary generators (API index, classes,
+ * dev rules, ctags). Data-driven generators (events, tasks, services, db, capabilities,
+ * plugin indexes) use their own per-file-type patterns collected via glob in generateAll.
  */
 export function getMoodleSourcePatterns(moodlePath: string): string[] {
   return [

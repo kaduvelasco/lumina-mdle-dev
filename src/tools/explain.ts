@@ -27,6 +27,7 @@ import { join, resolve } from "path";
 import { z } from "zod";
 
 import { loadConfig }                from "../config.js";
+import { NOT_INITIALIZED }          from "../utils/tool-helpers.js";
 import { detectPlugin }              from "../extractors/plugin.js";
 import { extractPluginSchema }       from "../extractors/schema.js";
 import { extractPluginEvents }       from "../extractors/events.js";
@@ -34,7 +35,7 @@ import { extractPluginTasks, formatCronSchedule } from "../extractors/tasks.js";
 import { extractPluginServices }     from "../extractors/services.js";
 import { extractPluginCapabilities } from "../extractors/capabilities.js";
 import { extractPluginClasses }      from "../extractors/classes.js";
-import { resolvePluginPath } from "../utils/plugin-types.js";
+import { resolvePluginPath, isWithinMoodle } from "../utils/plugin-types.js";
 
 // ---------------------------------------------------------------------------
 // Registration
@@ -75,13 +76,7 @@ export function registerExplainTool(server: McpServer): void {
       // Load config
       // ------------------------------------------------------------------
       const config = loadConfig();
-
-      if (!config) {
-        return {
-          content: [{ type: "text" as const, text: "❌ Run `init_moodle_context` first." }],
-          isError: true,
-        };
-      }
+      if (!config) return NOT_INITIALIZED;
 
       const { moodlePath } = config;
 
@@ -90,7 +85,7 @@ export function registerExplainTool(server: McpServer): void {
       // ------------------------------------------------------------------
       const pluginPath = resolve(resolvePluginPath(plugin, moodlePath) ?? join(moodlePath, plugin));
 
-      if (!pluginPath.startsWith(resolve(moodlePath) + "/")) {
+      if (!isWithinMoodle(pluginPath, moodlePath)) {
         return {
           content: [{ type: "text" as const, text: "❌ Invalid plugin path: must be within the Moodle installation." }],
           isError: true,

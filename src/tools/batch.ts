@@ -22,12 +22,12 @@
  */
 
 import { McpServer }          from "@modelcontextprotocol/sdk/server/mcp.js";
-import { existsSync }         from "fs";
-import { join, relative, resolve } from "path";
+import { join, relative } from "path";
 import { z }                  from "zod";
 import { glob }               from "glob";
 
 import { loadConfig }                              from "../config.js";
+import { NOT_INITIALIZED }                        from "../utils/tool-helpers.js";
 import { generateAllForPlugin, PLUGIN_CONTEXT_FILES } from "../generators/plugin.js";
 import { generateAiIndex, findDevPlugins }         from "../generators/moodle.js";
 import { detectPlugin }                           from "../extractors/plugin.js";
@@ -180,15 +180,7 @@ export function registerBatchTool(server: McpServer): void {
       // ------------------------------------------------------------------
       const config = loadConfig();
 
-      if (!config) {
-        return {
-          content: [{
-            type: "text" as const,
-            text: "❌ moodle-mcp is not initialized. Run `init_moodle_context` first.",
-          }],
-          isError: true,
-        };
-      }
+      if (!config) return NOT_INITIALIZED;
 
       const { moodlePath, moodleVersion } = config;
 

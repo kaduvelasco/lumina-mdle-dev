@@ -19,10 +19,11 @@ import { McpServer }                                          from "@modelcontex
 import { createWriteStream, existsSync, readdirSync, statSync } from "fs";
 import { basename, join, relative, resolve }                  from "path";
 import { z }                                                  from "zod";
-import archiver                                               from "archiver";
+import { ZipArchive }                                         from "archiver";
 
-import { loadConfig }     from "../config.js";
-import { detectPlugin }   from "../extractors/plugin.js";
+import { loadConfig }         from "../config.js";
+import { NOT_INITIALIZED }   from "../utils/tool-helpers.js";
+import { detectPlugin }      from "../extractors/plugin.js";
 import { resolvePluginPath } from "../utils/plugin-types.js";
 
 // ---------------------------------------------------------------------------
@@ -100,7 +101,7 @@ function createZip(pluginPath: string, outputPath: string, folderName: string): 
   return new Promise((res, rej) => {
     const files   = collectFiles(pluginPath);
     const output  = createWriteStream(outputPath);
-    const archive = archiver("zip", { zlib: { level: 9 } });
+    const archive = new ZipArchive({ zlib: { level: 9 } });
 
     output.on("close", () => res());
     archive.on("error", (err) => rej(err));
@@ -173,16 +174,7 @@ export function registerReleaseTool(server: McpServer): void {
       // Load config
       // ------------------------------------------------------------------
       const config = loadConfig();
-
-      if (!config) {
-        return {
-          content: [{
-            type: "text" as const,
-            text: "❌ moodle-mcp is not initialized. Run `init_moodle_context` first.",
-          }],
-          isError: true,
-        };
-      }
+      if (!config) return NOT_INITIALIZED;
 
       const { moodlePath } = config;
 

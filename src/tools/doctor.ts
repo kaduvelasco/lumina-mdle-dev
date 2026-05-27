@@ -17,10 +17,9 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { existsSync, statSync } from "fs";
-import { join, resolve } from "path";
+import { join } from "path";
 import { execFile } from "child_process";
 import { promisify } from "util";
-import { glob } from "glob";
 
 const execFileAsync = promisify(execFile);
 
@@ -29,6 +28,7 @@ import { globalCache }                  from "../cache.js";
 import { isMoodleRoot }                  from "../extractors/moodle-detect.js";
 import { detectPlugin }                  from "../extractors/plugin.js";
 import { PLUGIN_CONTEXT_FILES }          from "../generators/plugin.js";
+import { findDevPlugins }               from "../generators/moodle.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -213,19 +213,14 @@ export function registerDoctorTool(server: McpServer): void {
       lines.push("## Development Plugins");
       lines.push("");
 
-      const devMarkers = await glob("**/.indevelopment", {
-        cwd:    config.moodlePath,
-        absolute: true,
-        ignore: ["vendor/**", "node_modules/**"],
-      });
+      const devPluginDirs = await findDevPlugins(config.moodlePath);
 
       const pluginChecks: CheckResult[] = [];
 
-      if (devMarkers.length === 0) {
+      if (devPluginDirs.length === 0) {
         lines.push("  — No plugins marked as in development.");
       } else {
-        for (const marker of devMarkers.sort()) {
-          const pluginDir = resolve(marker, "..");
+        for (const pluginDir of devPluginDirs.sort()) {
           let componentLabel = pluginDir.replace(config.moodlePath + "/", "");
 
           try {

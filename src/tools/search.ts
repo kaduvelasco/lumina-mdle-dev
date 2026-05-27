@@ -19,17 +19,26 @@ import { existsSync, readFileSync, statSync } from "fs";
 import { join, relative, resolve } from "path";
 import { z } from "zod";
 
-import { loadConfig }   from "../config.js";
-import { detectPlugin } from "../extractors/plugin.js";
-import { glob }         from "glob";
-import { resolvePluginPath } from "../utils/plugin-types.js";
+import { loadConfig }        from "../config.js";
+import { detectPlugin }      from "../extractors/plugin.js";
+import { resolvePluginPath, isWithinMoodle } from "../utils/plugin-types.js";
+import { findDevPlugins }    from "../generators/moodle.js";
+import { NOT_INITIALIZED }   from "../utils/tool-helpers.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Module-level cache so repeated searches don't re-read large index files */
+/** Module-level cache so repeated searches don't re-read large index files. */
 const indexCache = new Map<string, { mtime: number; lines: string[] }>();
+
+/**
+ * Maximum number of distinct files kept in the in-memory index cache.
+ * The set of index files is small (< 20), but entries for deleted files
+ * would otherwise accumulate indefinitely. Clearing when the limit is
+ * reached is a simple, safe eviction strategy.
+ */
+const INDEX_CACHE_MAX = 50;
 
 /**
  * Returns lines from an index file matching the query (case-insensitive).
@@ -38,11 +47,14 @@ const indexCache = new Map<string, { mtime: number; lines: string[] }>();
 function searchInFile(filePath: string, query: string): string[] {
   if (!existsSync(filePath)) return [];
 
-  let mtime = 0;
+  let mtime: number;
   try { mtime = statSync(filePath).mtimeMs; } catch { return []; }
 
   let cached = indexCache.get(filePath);
   if (!cached || cached.mtime !== mtime) {
+    // Evict all entries when the cache grows beyond the limit
+    if (indexCache.size >= INDEX_CACHE_MAX) indexCache.clear();
+
     const content = readFileSync(filePath, "utf-8");
     cached = { mtime, lines: content.split("\n") };
     indexCache.set(filePath, cached);
@@ -89,12 +101,7 @@ export function registerSearchTools(server: McpServer): void {
 
     async ({ query, limit }) => {
       const config = loadConfig();
-      if (!config) {
-        return {
-          content: [{ type: "text" as const, text: "❌ Run `init_moodle_context` first." }],
-          isError: true,
-        };
-      }
+      if (!config) return NOT_INITIALIZED;
 
       const indexFile = join(config.moodlePath, "MOODLE_PLUGIN_INDEX.md");
 
@@ -152,9 +159,9 @@ export function registerSearchTools(server: McpServer): void {
         .optional()
         .default("public")
         .describe(
-          "'public' — only fully public functions (default). " +
+          "'public' — only fully public functions, excluding deprecated (default). " +
           "'deprecated' — only deprecated functions. " +
-          "'all' — public + deprecated (same as index default)."
+          "'all' — all functions including both public and deprecated."
         ),
 
       limit: z
@@ -169,12 +176,7 @@ export function registerSearchTools(server: McpServer): void {
 
     async ({ query, visibility, limit }) => {
       const config = loadConfig();
-      if (!config) {
-        return {
-          content: [{ type: "text" as const, text: "❌ Run `init_moodle_context` first." }],
-          isError: true,
-        };
-      }
+      if (!config) return NOT_INITIALIZED;
 
       // Search the generated index file (fast path)
       const indexFile = join(config.moodlePath, "MOODLE_API_INDEX.md");
@@ -245,19 +247,14 @@ export function registerSearchTools(server: McpServer): void {
 
     async ({ plugin }) => {
       const config = loadConfig();
-      if (!config) {
-        return {
-          content: [{ type: "text" as const, text: "❌ Run `init_moodle_context` first." }],
-          isError: true,
-        };
-      }
+      if (!config) return NOT_INITIALIZED;
 
       const { moodlePath } = config;
 
       // Resolve path via shared utility (supports component, relative, absolute)
       const pluginPath = resolve(resolvePluginPath(plugin, moodlePath) ?? join(moodlePath, plugin));
 
-      if (!pluginPath.startsWith(resolve(moodlePath) + "/")) {
+      if (!isWithinMoodle(pluginPath, moodlePath)) {
         return {
           content: [{ type: "text" as const, text: "❌ Invalid plugin path: must be within the Moodle installation." }],
           isError: true,
@@ -346,20 +343,11 @@ export function registerSearchTools(server: McpServer): void {
 
     async () => {
       const config = loadConfig();
-      if (!config) {
-        return {
-          content: [{ type: "text" as const, text: "❌ Run `init_moodle_context` first." }],
-          isError: true,
-        };
-      }
+      if (!config) return NOT_INITIALIZED;
 
-      const devMarkers = await glob("**/.indevelopment", {
-        cwd:    config.moodlePath,
-        absolute: true,
-        ignore: ["vendor/**", "node_modules/**"],
-      });
+      const devPluginDirs = await findDevPlugins(config.moodlePath);
 
-      if (devMarkers.length === 0) {
+      if (devPluginDirs.length === 0) {
         return {
           content: [
             {
@@ -375,14 +363,13 @@ export function registerSearchTools(server: McpServer): void {
       }
 
       const lines = [
-        `Dev plugins: ${devMarkers.length}`,
+        `Dev plugins: ${devPluginDirs.length}`,
         "",
         "| Component | Path | Has AI Context |",
         "|-----------|------|----------------|",
       ];
 
-      for (const marker of devMarkers.sort()) {
-        const pluginDir = resolve(marker, "..");
+      for (const pluginDir of devPluginDirs.sort()) {
         try {
           const info       = detectPlugin(pluginDir);
           const rel        = relative(config.moodlePath, pluginDir);

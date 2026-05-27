@@ -8,8 +8,8 @@
  * — explain.ts and batch.ts were missing format, filter, qtype and others.
  */
 
-import { existsSync }     from "fs";
-import { join, isAbsolute } from "path";
+import { existsSync }              from "fs";
+import { join, isAbsolute, resolve, sep } from "path";
 
 // ---------------------------------------------------------------------------
 // Map
@@ -62,6 +62,15 @@ export const PLUGIN_TYPE_TO_DIR: Record<string, string> = {
 // ---------------------------------------------------------------------------
 // Resolver
 // ---------------------------------------------------------------------------
+
+/**
+ * Returns true when an absolute path is inside the Moodle installation root.
+ * Uses `sep` to avoid false matches on Windows (e.g. "C:\moodle/" vs "C:\moodle\").
+ * Both arguments should be absolute paths; moodlePath need not end with a separator.
+ */
+export function isWithinMoodle(absolutePath: string, moodlePath: string): boolean {
+  return absolutePath.startsWith(resolve(moodlePath) + sep);
+}
 
 /**
  * Resolves a plugin identifier to an absolute directory path.

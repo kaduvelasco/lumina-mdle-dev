@@ -120,7 +120,7 @@ export function saveConfig(config: Omit<MoodleConfig, "source">): void {
   try {
     writeFileSync(getConfigPath(), content, "utf-8");
   } catch (e) {
-    throw new Error(`Failed to save config to ${getConfigPath()}: ${String(e)}`);
+    throw new Error(`Failed to save config to ${getConfigPath()}: ${String(e)}`, { cause: e });
   }
 }
 

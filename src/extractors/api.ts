@@ -354,16 +354,12 @@ function getPhpFiles(dirPath: string, recurse = false): string[] {
 
 /**
  * Extracts and classifies all functions from Moodle's lib/ directory.
+ * Returns only public and deprecated functions — private, internal,
+ * and unverified functions are always excluded.
  *
- * @param moodlePath      - Absolute path to the Moodle root
- * @param includePrivate  - Include private/internal functions (default: false)
- * @param includeUnverified - Include functions without PHPDoc (default: false)
+ * @param moodlePath - Absolute path to the Moodle root
  */
-export function extractMoodleApi(
-  moodlePath:         string,
-  includePrivate      = false,
-  includeUnverified   = false,
-): ApiExtraction {
+export function extractMoodleApi(moodlePath: string): ApiExtraction {
   const libPath  = join(moodlePath, "lib");
   const phpFiles = getPhpFiles(libPath);
 
@@ -384,13 +380,10 @@ export function extractMoodleApi(
     unverified: all.filter((f) => f.visibility === "unverified").length,
   };
 
-  // Apply visibility filter
-  const functions = all.filter((f) => {
-    if (f.visibility === "public" || f.visibility === "deprecated") return true;
-    if (f.visibility === "private" || f.visibility === "internal") return includePrivate;
-    if (f.visibility === "unverified") return includeUnverified;
-    return false;
-  });
+  // Keep only public and deprecated — private, internal, and unverified are excluded
+  const functions = all.filter((f) =>
+    f.visibility === "public" || f.visibility === "deprecated"
+  );
 
   // Sort: public first, then deprecated; within each group by file then name
   functions.sort((a, b) => {
@@ -413,19 +406,3 @@ export function extractFunctionsFromPhpFile(filePath: string): ApiFunction[] {
   return scanPhpFile(filePath);
 }
 
-/**
- * Returns only function names (deduplicated, sorted).
- */
-export function getFunctionNames(extraction: ApiExtraction): string[] {
-  return [...new Set(extraction.functions.map((f) => f.name))].sort();
-}
-
-/**
- * Filters an extraction to a specific visibility level.
- */
-export function filterByVisibility(
-  extraction: ApiExtraction,
-  visibility: ApiVisibility,
-): ApiFunction[] {
-  return extraction.functions.filter((f) => f.visibility === visibility);
-}

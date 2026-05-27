@@ -134,6 +134,8 @@ The server **never communicates with external servers** and **never modifies Moo
 
 ## 📊 Project status
 
+> **v1.1.0:** major dependency upgrades (zod v4, express v5, archiver v8, eslint v10, typescript v6) and code quality improvements — per-index cache invalidation in `generateAll`, `isWithinMoodle` path security utility, `pluginInfoCache` for reduced filesystem reads, `sendLoggingMessage` watcher notifications, and removal of unused exports and dead parameters. See [CHANGELOG.md](./CHANGELOG.md) for details.
+>
 > **v1.0.0:** initial release.
 
 ### Available Tools

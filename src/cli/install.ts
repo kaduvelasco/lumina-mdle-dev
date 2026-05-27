@@ -6,6 +6,8 @@ import { homedir } from "os";
 import { spawnSync } from "child_process";
 import { createInterface } from "readline";
 
+import { isMoodleRoot } from "../extractors/moodle-detect.js";
+
 const HOME        = homedir();
 const SERVER_NAME = "lumina-mdle-dev";
 const NPX_COMMAND = "npx";
@@ -43,7 +45,7 @@ function readJson(filePath: string): Record<string, unknown> {
   try {
     return JSON.parse(readFileSync(filePath, "utf-8")) as Record<string, unknown>;
   } catch (e) {
-    throw new Error(`Cannot parse ${filePath} — invalid JSON: ${String(e)}`);
+    throw new Error(`Cannot parse ${filePath} — invalid JSON: ${String(e)}`, { cause: e });
   }
 }
 
@@ -198,19 +200,6 @@ const TARGETS: Target[] = [
     },
   },
 ];
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Checks whether a directory looks like a Moodle installation root. */
-function isMoodleRoot(dirPath: string): boolean {
-  return (
-    existsSync(dirPath) &&
-    existsSync(join(dirPath, "version.php")) &&
-    existsSync(join(dirPath, "lib"))
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Prompts

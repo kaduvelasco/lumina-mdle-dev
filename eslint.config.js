@@ -1,9 +1,14 @@
-import js from "@eslint/js";
+import js       from "@eslint/js";
+import globals  from "globals";
 import tsPlugin from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
 
 export default [
   js.configs.recommended,
+  {
+    // Type declaration files are not runtime code — skip linting.
+    ignores: ["src/**/*.d.ts"],
+  },
   {
     files: ["src/**/*.ts"],
     languageOptions: {
@@ -11,6 +16,9 @@ export default [
       parserOptions: {
         ecmaVersion: 2022,
         sourceType: "module",
+      },
+      globals: {
+        ...globals.node,
       },
     },
     plugins: {

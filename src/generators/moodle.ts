@@ -27,7 +27,7 @@ import { parseServicesPhp }                                                   fr
 import { parseInstallXml }                                                    from "../extractors/schema.js";
 import { extractClasses }                                                     from "../extractors/classes.js";
 import { parseAccessPhp }                                                     from "../extractors/capabilities.js";
-import { detectPlugin }                                                       from "../extractors/plugin.js";
+import { detectPlugin, PluginInfo }                                           from "../extractors/plugin.js";
 import { globalCache, getMoodleSourcePatterns }                               from "../cache.js";
 import { PLUGIN_TYPE_TO_DIR }                                                 from "../utils/plugin-types.js";
 import {
@@ -74,13 +74,14 @@ async function findPluginDirs(moodlePath: string): Promise<string[]> {
 // ---------------------------------------------------------------------------
 
 export async function generateAiContext(
-  moodlePath: string,
-  moodleVersion: string
+  moodlePath:   string,
+  moodleVersion: string,
+  pluginDirs?:  string[],
 ): Promise<GeneratorResult> {
   const output = join(moodlePath, "AI_CONTEXT.md");
 
   return safely(output, async () => {
-    const pluginDirs  = await findPluginDirs(moodlePath);
+    const dirs = pluginDirs ?? await findPluginDirs(moodlePath);
 
     const content = [
       header("Moodle AI Context", "High-level overview of this Moodle installation for AI assistants."),
@@ -90,7 +91,7 @@ export async function generateAiContext(
       "|----------|-------|",
       `| Version  | ${moodleVersion} |`,
       `| Path     | ${moodlePath} |`,
-      `| Plugins  | ${pluginDirs.length} detected |`,
+      `| Plugins  | ${dirs.length} detected |`,
       "",
       "---",
       "",
@@ -429,15 +430,27 @@ export async function generateCapabilitiesIndex(moodlePath: string): Promise<Gen
   });
 }
 
-export async function generatePluginIndex(moodlePath: string): Promise<GeneratorResult> {
+export async function generatePluginIndex(
+  moodlePath:       string,
+  pluginDirs?:      string[],
+  pluginInfoCache?: Map<string, PluginInfo>,
+): Promise<GeneratorResult> {
   const output = join(moodlePath, "MOODLE_PLUGIN_INDEX.md");
 
   return safely(output, async () => {
-    const pluginDirs = await findPluginDirs(moodlePath);
+    const dirs = pluginDirs ?? await findPluginDirs(moodlePath);
+
+    const getInfo = (p: string): PluginInfo => {
+      const hit = pluginInfoCache?.get(p);
+      if (hit) return hit;
+      const info = detectPlugin(p);
+      pluginInfoCache?.set(p, info);
+      return info;
+    };
 
     const lines = [
       header("Moodle Plugin Index", "All plugins detected in this Moodle installation."),
-      `Total plugins: **${pluginDirs.length}**`,
+      `Total plugins: **${dirs.length}**`,
       "",
       "---",
       "",
@@ -445,9 +458,9 @@ export async function generatePluginIndex(moodlePath: string): Promise<Generator
       "|-----------|------|------|---------|------|",
     ];
 
-    for (const pluginDir of pluginDirs.sort()) {
+    for (const pluginDir of dirs.sort()) {
       try {
-        const info = detectPlugin(pluginDir);
+        const info = getInfo(pluginDir);
         const rel  = relative(moodlePath, pluginDir);
         lines.push(
           `| \`${info.component}\` | ${info.type} | ${info.displayName || info.name} | ${info.version} | ${rel} |`
@@ -460,10 +473,9 @@ export async function generatePluginIndex(moodlePath: string): Promise<Generator
   });
 }
 
-export function generateDevRules(moodlePath: string): GeneratorResult {
+export async function generateDevRules(moodlePath: string): Promise<GeneratorResult> {
   const output = join(moodlePath, "MOODLE_DEV_RULES.md");
-
-  try {
+  return safely(output, async () => {
     const content = [
       header("Moodle Development Rules", "Coding standards and best practices for Moodle plugin development."),
       "## Coding Standards",
@@ -547,15 +559,12 @@ export function generateDevRules(moodlePath: string): GeneratorResult {
     ].join("\n");
 
     return write(output, content);
-  } catch (e) {
-    return { file: output, success: false, error: String(e) };
-  }
+  });
 }
 
-export function generatePluginGuide(moodlePath: string, moodleVersion: string): GeneratorResult {
+export async function generatePluginGuide(moodlePath: string, moodleVersion: string): Promise<GeneratorResult> {
   const output = join(moodlePath, "MOODLE_PLUGIN_GUIDE.md");
-
-  try {
+  return safely(output, async () => {
     const content = [
       header("Moodle Plugin Development Guide", `Quick reference for Moodle ${moodleVersion} plugin development.`),
       "## Component Naming",
@@ -609,24 +618,32 @@ export function generatePluginGuide(moodlePath: string, moodleVersion: string): 
     ].join("\n");
 
     return write(output, content);
-  } catch (e) {
-    return { file: output, success: false, error: String(e) };
-  }
+  });
 }
 
 export async function generateAiWorkspace(
-  moodlePath: string,
-  moodleVersion: string
+  moodlePath:       string,
+  moodleVersion:    string,
+  pluginDirs?:      string[],
+  pluginInfoCache?: Map<string, PluginInfo>,
 ): Promise<GeneratorResult> {
   const output = join(moodlePath, "MOODLE_AI_WORKSPACE.md");
 
   return safely(output, async () => {
-    const pluginDirs = await findPluginDirs(moodlePath);
+    const dirs = pluginDirs ?? await findPluginDirs(moodlePath);
 
-    const devPlugins = pluginDirs.filter((p) =>
+    const getInfo = (p: string): PluginInfo => {
+      const hit = pluginInfoCache?.get(p);
+      if (hit) return hit;
+      const info = detectPlugin(p);
+      pluginInfoCache?.set(p, info);
+      return info;
+    };
+
+    const devPlugins = dirs.filter((p) =>
       existsSync(join(p, ".indevelopment"))
     );
-    const aiPlugins = pluginDirs.filter((p) =>
+    const aiPlugins = dirs.filter((p) =>
       existsSync(join(p, "PLUGIN_AI_CONTEXT.md"))
     );
 
@@ -638,7 +655,7 @@ export async function generateAiWorkspace(
       "|----------|-------|",
       `| Version  | ${moodleVersion} |`,
       `| Path     | ${moodlePath} |`,
-      `| Total plugins   | ${pluginDirs.length} |`,
+      `| Total plugins   | ${dirs.length} |`,
       `| Dev plugins     | ${devPlugins.length} |`,
       `| Plugins with AI context | ${aiPlugins.length} |`,
       "",
@@ -662,7 +679,7 @@ export async function generateAiWorkspace(
       lines.push("|-----------|------|");
       for (const p of devPlugins) {
         try {
-          const info = detectPlugin(p);
+          const info = getInfo(p);
           const rel  = relative(moodlePath, p);
           lines.push(`| \`${info.component}\` | ${rel} |`);
         } catch { /* skip */ }
@@ -676,7 +693,7 @@ export async function generateAiWorkspace(
       lines.push("|-----------|-----------------|");
       for (const p of aiPlugins) {
         try {
-          const info = detectPlugin(p);
+          const info = getInfo(p);
           const rel  = relative(moodlePath, p);
           lines.push(`| \`${info.component}\` | [PLUGIN_AI_CONTEXT.md](${rel}/PLUGIN_AI_CONTEXT.md) |`);
         } catch { /* skip */ }
@@ -689,16 +706,26 @@ export async function generateAiWorkspace(
 }
 
 export async function generateAiIndex(
-  moodlePath: string,
-  moodleVersion: string
+  moodlePath:       string,
+  moodleVersion:    string,
+  pluginDirs?:      string[],
+  pluginInfoCache?: Map<string, PluginInfo>,
 ): Promise<GeneratorResult> {
   const output = join(moodlePath, "MOODLE_AI_INDEX.md");
 
   return safely(output, async () => {
-    const pluginDirs = await findPluginDirs(moodlePath);
-    const aiPlugins  = pluginDirs.filter((p) =>
+    const dirs      = pluginDirs ?? await findPluginDirs(moodlePath);
+    const aiPlugins = dirs.filter((p) =>
       existsSync(join(p, "PLUGIN_AI_CONTEXT.md"))
     );
+
+    const getInfo = (p: string): PluginInfo => {
+      const hit = pluginInfoCache?.get(p);
+      if (hit) return hit;
+      const info = detectPlugin(p);
+      pluginInfoCache?.set(p, info);
+      return info;
+    };
 
     const globalFiles = [
       ["AI_CONTEXT.md",                "Installation overview"],
@@ -733,7 +760,7 @@ export async function generateAiIndex(
       lines.push("## Plugin AI Contexts", "");
       for (const p of aiPlugins.sort()) {
         try {
-          const info = detectPlugin(p);
+          const info = getInfo(p);
           const rel  = relative(moodlePath, p);
           lines.push(`- [\`${info.component}\`](${rel}/PLUGIN_AI_CONTEXT.md) — ${info.displayName || info.name}`);
         } catch { /* skip */ }
@@ -782,11 +809,32 @@ export async function generateAll(
 ): Promise<GeneratorResult[]> {
   const results: GeneratorResult[] = [];
 
-  const sources = getMoodleSourcePatterns(moodlePath);
+  // Structural source files — signal a Moodle upgrade or core lib change
+  const globalSources = getMoodleSourcePatterns(moodlePath);
+
+  // Pre-compute plugin dirs once — reused by all generators that iterate over plugins
+  const pluginDirs      = await findPluginDirs(moodlePath);
+  // Shared detectPlugin cache — avoids redundant version.php reads across generators
+  const pluginInfoCache = new Map<string, PluginInfo>();
+
+  // Per-index source patterns — collected in parallel to avoid sequential globs
+  // Each data-driven index only invalidates when its own file type changes.
+  const [eventsSources, tasksSources, servicesSources, dbTablesSources, capabilitiesSources] =
+    await Promise.all([
+      glob("**/db/events.php",   { cwd: moodlePath, absolute: true, ignore: ["**/vendor/**", "**/node_modules/**"] }),
+      glob("**/db/tasks.php",    { cwd: moodlePath, absolute: true, ignore: ["**/vendor/**", "**/node_modules/**"] }),
+      glob("**/db/services.php", { cwd: moodlePath, absolute: true, ignore: ["**/vendor/**", "**/node_modules/**"] }),
+      glob("**/db/install.xml",  { cwd: moodlePath, absolute: true, ignore: ["**/vendor/**", "**/node_modules/**"] }),
+      glob("**/db/access.php",   { cwd: moodlePath, absolute: true, ignore: ["**/vendor/**", "**/node_modules/**"] }),
+    ]);
+
+  // Plugin-level indexes invalidate when any plugin's version.php changes
+  const pluginVersionFiles = pluginDirs.map((d) => join(d, "version.php"));
 
   // Helper: skip if cache says output is fresh
   async function run(
     outputFile: string,
+    sources: string[],
     fn: () => Promise<GeneratorResult> | GeneratorResult
   ): Promise<void> {
     if (!globalCache.isStale(outputFile, sources)) {
@@ -798,37 +846,38 @@ export async function generateAll(
 
   // First wave: all independent generators in parallel
   await Promise.all([
-    run(join(moodlePath, "AI_CONTEXT.md"),
-      () => generateAiContext(moodlePath, moodleVersion)),
-    run(join(moodlePath, "MOODLE_API_INDEX.md"),
+    run(join(moodlePath, "AI_CONTEXT.md"),              pluginVersionFiles,
+      () => generateAiContext(moodlePath, moodleVersion, pluginDirs)),
+    run(join(moodlePath, "MOODLE_API_INDEX.md"),        globalSources,
       () => generateApiIndex(moodlePath)),
-    run(join(moodlePath, "MOODLE_EVENTS_INDEX.md"),
+    run(join(moodlePath, "MOODLE_EVENTS_INDEX.md"),     eventsSources,
       () => generateEventsIndex(moodlePath)),
-    run(join(moodlePath, "MOODLE_TASKS_INDEX.md"),
+    run(join(moodlePath, "MOODLE_TASKS_INDEX.md"),      tasksSources,
       () => generateTasksIndex(moodlePath)),
-    run(join(moodlePath, "MOODLE_SERVICES_INDEX.md"),
+    run(join(moodlePath, "MOODLE_SERVICES_INDEX.md"),   servicesSources,
       () => generateServicesIndex(moodlePath)),
-    run(join(moodlePath, "MOODLE_DB_TABLES_INDEX.md"),
+    run(join(moodlePath, "MOODLE_DB_TABLES_INDEX.md"),  dbTablesSources,
       () => generateDbTablesIndex(moodlePath)),
-    run(join(moodlePath, "MOODLE_CLASSES_INDEX.md"),
+    run(join(moodlePath, "MOODLE_CLASSES_INDEX.md"),    globalSources,
       () => generateClassesIndex(moodlePath)),
-    run(join(moodlePath, "MOODLE_CAPABILITIES_INDEX.md"),
+    run(join(moodlePath, "MOODLE_CAPABILITIES_INDEX.md"), capabilitiesSources,
       () => generateCapabilitiesIndex(moodlePath)),
-    run(join(moodlePath, "MOODLE_PLUGIN_INDEX.md"),
-      () => generatePluginIndex(moodlePath)),
-    run(join(moodlePath, "MOODLE_DEV_RULES.md"),
+    run(join(moodlePath, "MOODLE_PLUGIN_INDEX.md"),     pluginVersionFiles,
+      () => generatePluginIndex(moodlePath, pluginDirs, pluginInfoCache)),
+    run(join(moodlePath, "MOODLE_DEV_RULES.md"),        globalSources,
       () => generateDevRules(moodlePath)),
-    run(join(moodlePath, "MOODLE_PLUGIN_GUIDE.md"),
+    run(join(moodlePath, "MOODLE_PLUGIN_GUIDE.md"),     globalSources,
       () => generatePluginGuide(moodlePath, moodleVersion)),
-    run(join(moodlePath, "MOODLE_AI_WORKSPACE.md"),
-      () => generateAiWorkspace(moodlePath, moodleVersion)),
+    run(join(moodlePath, "MOODLE_AI_WORKSPACE.md"),     pluginVersionFiles,
+      () => generateAiWorkspace(moodlePath, moodleVersion, pluginDirs, pluginInfoCache)),
   ]);
 
   // Second wave: master index lists files written by the first wave
-  await run(join(moodlePath, "MOODLE_AI_INDEX.md"),
-    () => generateAiIndex(moodlePath, moodleVersion));
+  await run(join(moodlePath, "MOODLE_AI_INDEX.md"),     pluginVersionFiles,
+    () => generateAiIndex(moodlePath, moodleVersion, pluginDirs, pluginInfoCache));
 
-  await run(join(moodlePath, "tags"), () => generateCtags(moodlePath));
+  await run(join(moodlePath, "tags"),                   globalSources,
+    () => generateCtags(moodlePath));
 
   return results;
 }

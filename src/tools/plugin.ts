@@ -20,6 +20,8 @@ import { loadConfig }              from "../config.js";
 import { generateAllForPlugin }    from "../generators/plugin.js";
 import { generateAiIndex }         from "../generators/moodle.js";
 import { detectPlugin }            from "../extractors/plugin.js";
+import { NOT_INITIALIZED }         from "../utils/tool-helpers.js";
+import { isWithinMoodle }          from "../utils/plugin-types.js";
 
 // ---------------------------------------------------------------------------
 // Registration
@@ -53,18 +55,7 @@ export function registerPluginTool(server: McpServer): void {
       // Load config
       // ------------------------------------------------------------------
       const config = loadConfig();
-
-      if (!config) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: "❌ moodle-mcp is not initialized. Run `init_moodle_context` first.",
-            },
-          ],
-          isError: true,
-        };
-      }
+      if (!config) return NOT_INITIALIZED;
 
       const { moodlePath, moodleVersion } = config;
 
@@ -75,7 +66,7 @@ export function registerPluginTool(server: McpServer): void {
         isAbsolute(plugin_path) ? plugin_path : join(moodlePath, plugin_path)
       );
 
-      if (!fullPluginPath.startsWith(resolve(moodlePath) + "/")) {
+      if (!isWithinMoodle(fullPluginPath, moodlePath)) {
         return {
           content: [
             {
@@ -146,8 +137,9 @@ export function registerPluginTool(server: McpServer): void {
 
       // ------------------------------------------------------------------
       // Generate all plugin context files
+      // Pass the already-detected pluginInfo to avoid a second version.php read.
       // ------------------------------------------------------------------
-      const result = await generateAllForPlugin(fullPluginPath, moodlePath);
+      const result = await generateAllForPlugin(fullPluginPath, moodlePath, true, pluginInfo);
 
       // ------------------------------------------------------------------
       // Update global AI index to include new plugin

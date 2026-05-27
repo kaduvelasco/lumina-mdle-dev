@@ -105,7 +105,11 @@ export class MoodleWatcher {
       count += this.watchPlugin(pluginDir);
     }
 
-    this.running = true;
+    // Only mark as running when there are actual file watchers active.
+    // If dev plugins exist but none of their watched files are present,
+    // count === 0 and the caller should be informed that nothing is watched.
+    this.running = count > 0;
+
     if (devMarkers.length > MAX_WATCHED_PLUGINS) {
       this.stderr(
         `Warning: ${devMarkers.length} dev plugins found but only watching the first ` +
@@ -114,7 +118,11 @@ export class MoodleWatcher {
       );
     }
 
-    this.stderr(`Watching ${Math.min(devMarkers.length, MAX_WATCHED_PLUGINS)} dev plugins (${count} files)`);
+    this.stderr(
+      count > 0
+        ? `Watching ${Math.min(devMarkers.length, MAX_WATCHED_PLUGINS)} dev plugins (${count} files)`
+        : `Dev plugins found (${devMarkers.length}) but no watchable files exist — watcher not started.`
+    );
 
     return count;
   }

@@ -299,14 +299,8 @@ function makeLegacyMessageHandler(sseSessions: Map<string, SSEServerTransport>) 
     try {
       const transport = sseSessions.get(sessionId)!;
 
-      // SDK 1.10+ uses handleRequest; older versions used handlePostMessage.
-      // Support both to maintain backwards compatibility.
-      if (typeof (transport as unknown as Record<string, unknown>)["handleRequest"] === "function") {
-        await (transport as unknown as { handleRequest: (req: Request, res: Response) => Promise<void> })
-          .handleRequest(req, res);
-      } else {
-        await transport.handlePostMessage(req, res);
-      }
+      // Use the standard typed API for the legacy SSE transport.
+      await transport.handlePostMessage(req, res);
     } catch (e) {
       process.stderr.write(`[http] /messages error: ${String(e)}\n`);
       if (!res.headersSent) {
@@ -393,13 +387,14 @@ export async function startHttpServer(options: HttpServerOptions): Promise<() =>
     );
   });
 
-  return (): Promise<void> => {
-    return new Promise((done) => {
-      for (const t of streamableSessions.values()) t.close().catch(() => {});
-      for (const t of sseSessions.values())         t.close().catch(() => {});
-      streamableSessions.clear();
-      sseSessions.clear();
-      httpServer.close(() => done());
-    });
+  return async (): Promise<void> => {
+    // Await all transport closes before shutting down the HTTP server
+    await Promise.allSettled([
+      ...[...streamableSessions.values()].map((t) => t.close()),
+      ...[...sseSessions.values()].map((t) => t.close()),
+    ]);
+    streamableSessions.clear();
+    sseSessions.clear();
+    await new Promise<void>((done) => httpServer.close(() => done()));
   };
 }

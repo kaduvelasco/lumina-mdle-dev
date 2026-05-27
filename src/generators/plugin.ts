@@ -88,7 +88,7 @@ function buildDirectoryTree(dirPath: string, prefix = "", depth = 0): string {
   if (depth > 2) return "";
 
   const lines: string[] = [];
-  let entries: string[] = [];
+  let entries: string[];
 
   try {
     entries = readdirSync(dirPath).filter((e) => {
@@ -853,11 +853,13 @@ export async function generatePluginAiContext(
 // ---------------------------------------------------------------------------
 
 export async function generateAllForPlugin(
-  pluginPath: string,
-  moodlePath: string,
-  markAsDev: boolean = true
+  pluginPath:    string,
+  moodlePath:    string,
+  markAsDev:     boolean    = true,
+  existingInfo?: PluginInfo,
 ): Promise<PluginGeneratorResult> {
-  const info    = { ...detectPlugin(pluginPath), moodlePath };
+  // Reuse pre-detected info when available to avoid a redundant detectPlugin call
+  const info = { ...(existingInfo ?? detectPlugin(pluginPath)), moodlePath };
   const sources = getPluginSourceFiles(pluginPath);
   const results: GeneratorResult[] = [];
 

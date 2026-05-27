@@ -10,10 +10,11 @@
  */
 
 import { McpServer }              from "@modelcontextprotocol/sdk/server/mcp.js";
-import { join, resolve }          from "path";
+import { join }                    from "path";
 import { z }                      from "zod";
 
 import { loadConfig, saveConfig }              from "../config.js";
+import { NOT_INITIALIZED }                    from "../utils/tool-helpers.js";
 import { generateAll, findDevPlugins }         from "../generators/moodle.js";
 import { generateAllForPlugin, PLUGIN_CONTEXT_FILES } from "../generators/plugin.js";
 import { detectMoodleInstall }                 from "../extractors/moodle-detect.js";
@@ -56,12 +57,7 @@ export function registerUpdateTool(server: McpServer): void {
 
     async ({ include_plugins, force }) => {
       const config = loadConfig();
-      if (!config) {
-        return {
-          content: [{ type: "text" as const, text: "❌ Run `init_moodle_context` first." }],
-          isError: true,
-        };
-      }
+      if (!config) return NOT_INITIALIZED;
 
       const { moodlePath } = config;
 
@@ -188,16 +184,21 @@ export function registerUpdateTool(server: McpServer): void {
         return { content: [{ type: "text" as const, text: "⚠ Watcher is already running. Use action: 'stop' first." }] };
       }
 
-      if (!config) {
-        return {
-          content: [{ type: "text" as const, text: "❌ Run `init_moodle_context` first." }],
-          isError: true,
-        };
-      }
+      if (!config) return NOT_INITIALIZED;
 
       const { moodlePath, moodleVersion } = config;
       activeWatcher = new MoodleWatcher(moodlePath, moodleVersion);
       const count   = await activeWatcher.start();
+
+      // Forward regeneration events to the MCP client as log notifications.
+      // The client sees these in its log panel without needing a separate tool call.
+      activeWatcher.onChange((event) => {
+        server.sendLoggingMessage({
+          level:  "info",
+          logger: "moodle-mcp/watcher",
+          data:   `[watcher] ${event.component} — context regenerated (${event.file})`,
+        }).catch(() => { /* ignore — transport may be closed or client may not support logging */ });
+      });
 
       return {
         content: [{

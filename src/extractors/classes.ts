@@ -173,15 +173,3 @@ export function getClassFQNs(extraction: ClassesExtraction): string[] {
   return extraction.classes.map((c) => c.fqn).sort();
 }
 
-/**
- * Groups classes by kind.
- */
-export function groupByKind(extraction: ClassesExtraction): Record<ClassKind, PhpClass[]> {
-  const groups: Record<string, PhpClass[]> = {
-    "class": [], "abstract class": [], "interface": [], "trait": [], "enum": [],
-  };
-  for (const cls of extraction.classes) {
-    groups[cls.kind]?.push(cls);
-  }
-  return groups as Record<ClassKind, PhpClass[]>;
-}

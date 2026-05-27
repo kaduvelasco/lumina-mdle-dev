@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] — 2026-05-27
+
+### Fixed
+
+- **`tools/release.ts`:** `archiver` v8 removed the default export and the `archiver(format, options)` factory in favour of named class exports (`ZipArchive`, `TarArchive`). Import updated from `import archiver from "archiver"` to `import { ZipArchive } from "archiver"`; instantiation updated from `archiver("zip", options)` to `new ZipArchive(options)`. The runtime server startup error introduced by the v8 upgrade was silently masked because tests do not cover HTTP server initialisation.
+- **`cli/install.ts`:** Re-thrown error in `readJson` was missing `{ cause: e }` — the original parse exception was lost, making the error message the only debugging signal. Corrected to `new Error(msg, { cause: e })` to preserve the full error chain (`preserve-caught-error`).
+- **`generators/plugin.ts`:** Dead initial assignment `let entries: string[] = []` removed — the `[]` value was never read because either the `try` block immediately replaced it or the `catch` block returned early (`no-useless-assignment`).
+- **`tools/search.ts`:** Dead initial assignment `let mtime = 0` removed — same pattern as above; `statSync` always overwrites it or the catch returns early.
+- **`tools/batch.ts`:** Unused imports `existsSync` (from `fs`) and `resolve` (from `path`) removed.
+- **`tools/update.ts`:** Unused import `resolve` (from `path`) removed — the comment referencing it described a previous implementation that no longer exists.
+- **`generators/moodle.ts`:** `generateDevRules` and `generatePluginGuide` converted from synchronous to async, wrapped with the `safely()` error boundary — aligns with every other generator in the same file; previously an uncaught exception in either function would crash `generateAll` rather than recording a failed result.
+- **`generators/moodle.ts`:** Per-index source patterns in `generateAll` — each data-driven generator now receives glob-collected source files matching its own file type as the cache invalidation signal (`**/db/events.php`, `**/db/tasks.php`, `**/db/services.php`, `**/db/install.xml`, `**/db/access.php`); structural generators (`MOODLE_API_INDEX.md`, `MOODLE_CLASSES_INDEX.md`, `MOODLE_DEV_RULES.md`, `tags`) use `getMoodleSourcePatterns`; plugin-level indexes (`MOODLE_PLUGIN_INDEX.md`, `MOODLE_AI_WORKSPACE.md`, `AI_CONTEXT.md`, `MOODLE_AI_INDEX.md`) use `pluginVersionFiles`. Previously all 13 generators shared the same 3 structural files as their invalidation signal, so modifying any plugin's `db/events.php` would not trigger regeneration of `MOODLE_EVENTS_INDEX.md` unless one of those 3 structural files had also changed.
+- **`http.ts`:** HTTP server shutdown now awaits all `streamableSessions` and `sseSessions` close calls via `Promise.allSettled` before closing the underlying HTTP server — prevents active connections from being abandoned on graceful shutdown.
+- **`http.ts`:** Duck-type guard on the SSE transport object removed — the SDK type system is the correct guard; replaced with a direct method call.
+- **`cli/install.ts`:** Duplicate `isMoodleRoot` function body removed; now imported from `extractors/moodle-detect.ts` — single source of truth, eliminating a silent divergence risk.
+- **`tools/update.ts`**, **`tools/release.ts`:** Redundant config-check blocks (7 lines each) replaced by the shared `NOT_INITIALIZED` constant from `utils/tool-helpers.ts`.
+- **`tools/plugin.ts`**, **`tools/search.ts`**, **`tools/explain.ts`:** Inline path traversal guard (`resolve + startsWith + sep`) replaced by `isWithinMoodle(pluginPath, moodlePath)` from `utils/plugin-types.ts` — removes a duplicated security pattern across three tool files.
+- **`extractors/api.ts`:** `includePrivate` and `includeUnverified` parameters removed from `extractMoodleApi` — these flags were unused by all callers; the filter now statically returns only public and deprecated functions.
+- **`extractors/hooks.ts`:** Unused exported function `pluginHasLegacyCallbacks` removed.
+- **`extractors/plugin.ts`:** Unused exported function `getPluginTypeMap` removed.
+- **`extractors/classes.ts`:** Unused exported function `groupByKind` removed.
+- **`cache.ts`:** Unused `resetStats` method removed from `MtimeCache` — `getStats` already returns a full snapshot; `resetStats` was never called.
+
+### Changed
+
+- **`generators/moodle.ts`:** `generateAll` now pre-computes `pluginDirs` once via `findPluginDirs` and passes the result to all generators that iterate over plugins (`generateAiContext`, `generatePluginIndex`, `generateAiWorkspace`, `generateAiIndex`) — previously each generator independently rediscovered plugin directories with redundant glob calls.
+- **`generators/moodle.ts`:** `run()` helper inside `generateAll` now accepts an explicit `sources: string[]` parameter instead of capturing a single shared variable — makes each generator's invalidation signal visible at the call site.
+- **`generators/plugin.ts`:** `generateAllForPlugin` gains an optional fourth parameter `existingInfo?: PluginInfo` — callers that already hold a pre-detected `PluginInfo` (e.g. `generateAll`) can pass it in to skip a redundant `detectPlugin` filesystem read.
+- **`cache.ts`:** `getMoodleSourcePatterns` docstring updated to reflect its narrowed scope — structural generators only; data-driven generators now use per-file-type patterns collected via glob in `generateAll`.
+- **`zod` upgraded v3 → v4:** no breaking changes for this project. One adjustment required: `z.record(z.string())` (single-argument form) was removed in v4 — updated to `z.record(z.string(), z.string())` in `extractors/capabilities.ts`.
+- **`express` upgraded v4 → v5** and **`@types/express` upgraded v4 → v5:** the `app.all("/mcp", ...)` route and all other API surface used in `src/http.ts` are fully compatible with v5 — no code modifications required. Express v5 now automatically forwards unhandled async errors to error middleware; existing `try/catch` blocks remain functional.
+- **`archiver` upgraded v7 → v8:** resolves the transitive inclusion of the deprecated `glob@10.5.0`. The v8 upgrade changed the module from CommonJS to ESM with named class exports — code changes in `tools/release.ts` were required (see Fixed above).
+- **`fast-xml-parser` upgraded v4 → v5:** resolves a moderate severity vulnerability (XMLBuilder comment/CDATA injection, [GHSA-gh4j-gqv2-49f6](https://github.com/advisories/GHSA-gh4j-gqv2-49f6)). The project uses only `XMLParser` — no code modifications required.
+- **`eslint` upgraded v9 → v10:** the project already used flat config (`eslint.config.js`) — the main v10 requirement. `@eslint/js` is now a separate peer dependency (was bundled in v9). Node.js globals (`process`, `Buffer`, etc.) must now be declared explicitly via `globals.node` in `languageOptions`. Two new rules enforced: `no-useless-assignment` and `preserve-caught-error` (see Fixed above).
+- **`typescript` upgraded v5 → v6:** zero code changes required — all existing patterns and compiler options (`Node16` module/moduleResolution, strict mode) are fully compatible with v6.
+- **`@types/node` updated 22.19.17 → 22.19.19** (patch).
+- **`tsx` updated 4.21.0 → 4.22.3** (patch).
+- **`@typescript-eslint/eslint-plugin` and `@typescript-eslint/parser` updated 8.59.0 → 8.60.0** (patch).
+- **`npm audit fix` applied:** resolved 7 moderate and 1 high severity vulnerabilities in transitive dependencies (`brace-expansion` DoS, `fast-uri` path traversal and host confusion, `hono` multiple CVEs, `ip-address` XSS, `qs` DoS).
+- **`eslint.config.js` updated:** added `globals.node` to `languageOptions` so Node.js globals are recognised; added an `ignores` block to skip `src/**/*.d.ts` files (type declaration files are not runtime code).
+
+### Added
+
+- **`utils/plugin-types.ts`:** `isWithinMoodle(absolutePath, moodlePath)` — shared path security utility that consolidates the `resolve + startsWith + sep` pattern previously duplicated inline in `tools/plugin.ts`, `tools/search.ts`, and `tools/explain.ts`.
+- **`generators/moodle.ts`:** `pluginInfoCache: Map<string, PluginInfo>` — session-local cache for `detectPlugin` results, created in `generateAll` and passed to `generatePluginIndex`, `generateAiWorkspace`, and `generateAiIndex`; reduces redundant `version.php` reads when multiple generators visit the same plugin in a single `generateAll` call.
+- **`tools/update.ts`:** `watch_plugins` now forwards regeneration events to the MCP client via `server.sendLoggingMessage` — watcher activity is visible in the AI client's log panel without requiring a separate tool call.
+- **`src/types/archiver.d.ts`:** minimal TypeScript declaration file for the `archiver` v8 ESM API (`ZipArchive` class with `.file()`, `.pipe()`, `.finalize()`, and `.on()` methods). Replaces the now-incompatible `@types/archiver` v7 package.
+- **`@eslint/js`** added as explicit `devDependency`: was a bundled transitive in ESLint v9 — now a separate peer dependency in v10, required by `eslint.config.js`.
+- **`globals`** added as `devDependency`: required to declare Node.js runtime globals in the ESLint v10 flat config.
+
+### Removed
+
+- **`@types/archiver`** removed from `devDependencies`: the DefinitelyTyped package covers the v7 API (default export `archiver(format, options)`) which was removed in v8. Replaced by the project-local `src/types/archiver.d.ts`.
+
+---
+
 ## [1.0.2] — 2026-05-22
 
 ### Fixed

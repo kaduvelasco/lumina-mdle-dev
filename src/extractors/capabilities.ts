@@ -22,7 +22,7 @@ const ZCapability = z.object({
   captype:      z.string().default("read"),
   contextlevel: z.string().default(""),
   riskbitmask:  z.string().default(""),
-  archetypes:   z.record(z.string()).default({}),
+  archetypes:   z.record(z.string(), z.string()).default({}),
 });
 
 // ---------------------------------------------------------------------------
@@ -84,7 +84,14 @@ function splitCapabilityEntries(
   return entries;
 }
 
-function extractString(block: string, key: string): string {
+/**
+ * Extracts a string or PHP constant value from a capability block.
+ * Named distinctly from the shared php-parser extractString, which handles
+ * only quoted strings. This variant also matches bare PHP constants
+ * (e.g. CONTEXT_COURSE, CAP_ALLOW) as the capabilities file uses them
+ * for contextlevel and captype fields.
+ */
+function extractCapabilityString(block: string, key: string): string {
   const strMatch = block.match(
     new RegExp(`['"]${key}['"]\\s*=>\\s*['"]([^'"]+)['"]`)
   );
@@ -155,9 +162,9 @@ export function parseAccessPhp(filePath: string): CapabilitiesExtraction | null 
   for (const { name, body: entryBody } of entries) {
     const raw = {
       name,
-      captype:      extractString(entryBody, "captype"),
-      contextlevel: extractString(entryBody, "contextlevel"),
-      riskbitmask:  extractString(entryBody, "riskbitmask"),
+      captype:      extractCapabilityString(entryBody, "captype"),
+      contextlevel: extractCapabilityString(entryBody, "contextlevel"),
+      riskbitmask:  extractCapabilityString(entryBody, "riskbitmask"),
       archetypes:   extractArchetypes(entryBody),
     };
 

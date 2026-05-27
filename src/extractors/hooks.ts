@@ -326,9 +326,3 @@ export function pluginUsesHookApi(extraction: HooksExtraction): boolean {
   );
 }
 
-/**
- * Returns true if the plugin has any legacy callbacks that should be migrated.
- */
-export function pluginHasLegacyCallbacks(extraction: HooksExtraction): boolean {
-  return extraction.legacyWarnings.length > 0;
-}
